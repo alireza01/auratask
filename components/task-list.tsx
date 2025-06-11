@@ -25,10 +25,7 @@ interface TaskListProps {
 export default function TaskList({
   tasks,
   groups,
-  settings,
-  user,
   onTasksChange,
-  onGroupsChange,
   onComplete,
   onEditTask,
   onDeleteTask,

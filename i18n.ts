@@ -1,4 +1,3 @@
-import { getRequestConfig } from 'next-intl/server';
 
 export const locales = ['en', 'fa'] as const;
 export const defaultLocale = 'en' as const;

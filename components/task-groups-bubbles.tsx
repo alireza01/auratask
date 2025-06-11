@@ -31,7 +31,7 @@ export default function TaskGroupsBubbles({
 }: TaskGroupsBubblesProps) {
   const t = useTranslations('TaskGroups');
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>, groupId: string) => {
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>, groupId: string) => {
     e.preventDefault();
     const taskId = e.dataTransfer.getData('text/plain');
     if (!taskId || typeof taskId !== 'string') {
@@ -39,12 +39,17 @@ export default function TaskGroupsBubbles({
       return;
     }
     onTaskDrop(taskId, groupId);
+    // Refresh groups after task drop
+    await onGroupsChange();
   };
 
   const totalTasks = React.useMemo(() => 
     groups.reduce((acc, group) => acc + getTaskCountForGroup(group.id), 0),
     [groups, getTaskCountForGroup]
   );
+
+  // Determine if user can add groups
+  const canAddGroups = user || guestUser;
 
   return (
     <div className="relative mb-8" role="tablist" aria-label="Task Groups">
@@ -135,7 +140,7 @@ export default function TaskGroupsBubbles({
         ))}
 
         {/* Add Group Bubble */}
-        {onAddGroup && (
+        {canAddGroups && onAddGroup && (
           <motion.div
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
