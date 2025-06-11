@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { TaskCard } from "@/components/task-card"
-import type { Task, TaskGroup as TaskGroupType } from "@/types"
+import type { Task, TaskGroup as TaskGroupType, UserSettings, User } from "@/types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Archive, RotateCcw, ChevronDown, ChevronUp } from "lucide-react"
@@ -13,9 +13,11 @@ import { DraggableTaskCard } from './draggable-task-card';
 interface TaskListProps {
   tasks: Task[]
   groups: TaskGroupType[]
+  settings: UserSettings | null
+  user: User | null
   onTasksChange: () => void
   onGroupsChange: () => void
-  onComplete: (taskId: string, completed: boolean) => Promise<void> // Added for optimistic updates
+  onComplete: (taskId: string, completed: boolean) => Promise<void>
   onEditTask?: (task: Task) => void
   onDeleteTask?: (taskId: string) => void
 }
@@ -23,8 +25,11 @@ interface TaskListProps {
 export default function TaskList({
   tasks,
   groups,
+  settings,
+  user,
   onTasksChange,
-  onComplete, // Destructure onComplete prop
+  onGroupsChange,
+  onComplete,
   onEditTask,
   onDeleteTask,
 }: TaskListProps) {
@@ -110,7 +115,7 @@ export default function TaskList({
                     >
                       <DraggableTaskCard
                         task={task}
-                        onComplete={onComplete} // Use onComplete prop
+                        onComplete={onComplete}
                         onUpdate={onTasksChange}
                         onEdit={onEditTask}
                         onDelete={onDeleteTask}
@@ -164,7 +169,7 @@ export default function TaskList({
                       <DraggableTaskCard
                         key={task.id}
                         task={task}
-                        onComplete={onComplete} // Use onComplete prop
+                        onComplete={onComplete}
                         onUpdate={onTasksChange}
                         onEdit={onEditTask}
                         onDelete={onDeleteTask}
@@ -223,7 +228,7 @@ export default function TaskList({
                       <div className="opacity-60">
                         <TaskCard
                           task={task}
-                          onComplete={onComplete} // Use onComplete prop
+                          onComplete={onComplete}
                           onUpdate={onTasksChange}
                           onEdit={onEditTask}
                           onDelete={onDeleteTask}
