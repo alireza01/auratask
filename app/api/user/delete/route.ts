@@ -1,33 +1,30 @@
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { createClient } from '@supabase/supabase-js';
+import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
-export async function DELETE(request: Request) {
-  // Ensure the request is authorized. In a real application, you'd have more robust auth.
-  // For this task, we'll assume a simple check or rely on the service role key's power.
-  // You might want to check for an admin token or specific user roles here.
+export async function POST() {
+  const supabase = createRouteHandlerClient({ cookies });
+  const { data: { user } } = await supabase.auth.getUser();
 
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // This is the ONLY place you should use the service role key.
   const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
   );
 
-  try {
-    const { userId } = await request.json();
+  // Use the authenticated user's ID from the session, not from the request body.
+  const { error } = await supabaseAdmin.auth.admin.deleteUser(user.id);
 
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
-    }
-
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
-
-    if (error) {
-      console.error('Error deleting user:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ message: 'User deleted successfully' }, { status: 200 });
-  } catch (error) {
-    console.error('Unexpected error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  if (error) {
+    console.error('Error deleting user:', error);
+    return NextResponse.json({ error: 'Failed to delete user account.' }, { status: 500 });
   }
+
+  return NextResponse.json({ success: true });
 }

@@ -295,35 +295,24 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   // Placeholder for updateSettings action
-  updateSettings: async (supabase: SupabaseClient, newSettings: Partial<Settings>) => {
-    const originalSettings = get().settings;
-    
-    // Optimistic update
-    set((state) => ({ 
-      settings: { ...state.settings, ...newSettings } 
-    }));
+updateSettings: async (supabase, newSettings) => {
+  const originalSettings = get().settings;
+  // Optimistic update for instant UI feedback
+  set((state) => ({ settings: { ...state.settings, ...newSettings } }));
 
-    try {
-      const { error } = await supabase
-        .from('user_settings')
-        .upsert({
-          ...newSettings,
-          updated_at: new Date().toISOString(),
-        }, { 
-          onConflict: 'user_id'
-        });
+  try {
+    const { error } = await supabase
+      .from('user_settings')
+      .upsert({ ...newSettings, user_id: get().user!.id }, { onConflict: 'user_id' });
 
-      if (error) throw error;
-
-      toast.success('Settings updated successfully');
-    } catch (error) {
-      console.error('Failed to update settings:', error);
-      // Revert optimistic update on error
-      set({ settings: originalSettings });
-      toast.error('Failed to update settings. Please try again.');
-      throw error;
-    }
-  },
+    if (error) throw error;
+    toast.success('Settings saved!');
+  } catch (error) {
+    // Revert on failure
+    set({ settings: originalSettings });
+    toast.error('Failed to save settings.');
+  }
+},
   // Actions for Tags
   fetchTags: async (supabase: SupabaseClient) => {
     set({ isLoading: true, error: null });

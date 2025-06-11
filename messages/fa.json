@@ -1,0 +1,45 @@
+{
+  "Header": {
+    "searchPlaceholder": "جستجو در وظایف...",
+    "settings": "تنظیمات",
+    "signOut": "خروج",
+    "signIn": "ورود"
+  },
+  "TaskGroups": {
+    "allTasks": "همه وظایف",
+    "addGroup": "افزودن گروه",
+    "tasksCount": "{count} وظیفه"
+  },
+  "TaskForm": {
+    "title": "عنوان",
+    "description": "توضیحات",
+    "dueDate": "تاریخ سررسید",
+    "priority": "اولویت",
+    "group": "گروه",
+    "tags": "برچسب‌ها",
+    "save": "ذخیره",
+    "cancel": "انصراف",
+    "delete": "حذف",
+    "edit": "ویرایش"
+  },
+  "Settings": {
+    "account": "حساب کاربری",
+    "appearance": "ظاهر",
+    "notifications": "اعلان‌ها",
+    "language": "زبان",
+    "deleteAccount": "حذف حساب کاربری",
+    "deleteAccountConfirm": "آیا از حذف حساب کاربری خود اطمینان دارید؟",
+    "deleteAccountWarning": "این عمل غیرقابل بازگشت است."
+  },
+  "Common": {
+    "loading": "در حال بارگذاری...",
+    "error": "خطا",
+    "success": "موفق",
+    "retry": "تلاش مجدد",
+    "cancel": "انصراف",
+    "confirm": "تایید",
+    "delete": "حذف",
+    "edit": "ویرایش",
+    "save": "ذخیره"
+  }
+} 

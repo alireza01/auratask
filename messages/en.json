@@ -1,0 +1,45 @@
+{
+  "Header": {
+    "searchPlaceholder": "Search tasks...",
+    "settings": "Settings",
+    "signOut": "Sign Out",
+    "signIn": "Sign In"
+  },
+  "TaskGroups": {
+    "allTasks": "All Tasks",
+    "addGroup": "Add Group",
+    "tasksCount": "{count} tasks"
+  },
+  "TaskForm": {
+    "title": "Title",
+    "description": "Description",
+    "dueDate": "Due Date",
+    "priority": "Priority",
+    "group": "Group",
+    "tags": "Tags",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit"
+  },
+  "Settings": {
+    "account": "Account",
+    "appearance": "Appearance",
+    "notifications": "Notifications",
+    "language": "Language",
+    "deleteAccount": "Delete Account",
+    "deleteAccountConfirm": "Are you sure you want to delete your account?",
+    "deleteAccountWarning": "This action cannot be undone."
+  },
+  "Common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "save": "Save"
+  }
+} 

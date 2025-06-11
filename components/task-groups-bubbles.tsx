@@ -4,6 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { TaskGroup, User, GuestUser } from '@/types';
 import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 
 interface TaskGroupsBubblesProps {
   user: User | null;
@@ -28,6 +29,8 @@ export default function TaskGroupsBubbles({
   getTaskCountForGroup,
   onAddGroup,
 }: TaskGroupsBubblesProps) {
+  const t = useTranslations('TaskGroups');
+
   const handleDrop = (e: React.DragEvent<HTMLDivElement>, groupId: string) => {
     e.preventDefault();
     const taskId = e.dataTransfer.getData('text/plain');
@@ -84,10 +87,10 @@ export default function TaskGroupsBubbles({
           }}
         >
           <span className="text-lg" aria-hidden="true">📋</span>
-          <span className="font-medium">همه وظایف</span>
+          <span className="font-medium">{t('allTasks')}</span>
           <span 
             className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full"
-            aria-label={`${totalTasks} tasks total`}
+            aria-label={t('tasksCount', { count: totalTasks })}
           >
             {totalTasks}
           </span>
@@ -124,7 +127,7 @@ export default function TaskGroupsBubbles({
             <span className="font-medium">{group.name}</span>
             <span 
               className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full"
-              aria-label={`${getTaskCountForGroup(group.id)} tasks in ${group.name}`}
+              aria-label={t('tasksCount', { count: getTaskCountForGroup(group.id) })}
             >
               {getTaskCountForGroup(group.id)}
             </span>
@@ -146,10 +149,10 @@ export default function TaskGroupsBubbles({
                 onAddGroup();
               }
             }}
-            aria-label="Add new task group"
+            aria-label={t('addGroup')}
           >
             <span className="text-lg" aria-hidden="true">➕</span>
-            <span className="font-medium">افزودن گروه</span>
+            <span className="font-medium">{t('addGroup')}</span>
           </motion.div>
         )}
       </div>
