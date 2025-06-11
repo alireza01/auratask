@@ -4,7 +4,7 @@ import type React from "react"
 
 import { createContext, useContext, useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
-import type { User } from "@supabase/auth-helpers-nextjs"
+import type { User, Session } from "@supabase/supabase-js"
 import CustomCursor from "./custom-cursor"
 
 type Theme = "default" | "alireza" | "neda"
@@ -56,15 +56,15 @@ export function ThemeProvider({ children, defaultTheme = "default" }: ThemeProvi
      * This ensures the user state is always up-to-date with Supabase's authentication.
      */
     // Fetch the initial user session.
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user)
+    supabase.auth.getUser().then(({ data: { user: currentUser } }: { data: { user: User | null } }) => {
+      setUser(currentUser)
     })
 
     // Subscribe to authentication state changes.
     // This listener updates the 'user' state whenever a user signs in, signs out, etc.
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_, session) => {
+    } = supabase.auth.onAuthStateChange((_event: string, session: Session | null) => {
       setUser(session?.user ?? null)
     })
 

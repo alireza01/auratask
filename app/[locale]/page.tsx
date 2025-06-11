@@ -1,10 +1,9 @@
 import TaskDashboard from '@/components/task-dashboard'
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createClient } from '@/lib/supabase/server'
 import type { User } from '@/types'
 
 export default async function Home() {
-  const supabase = createServerComponentClient({ cookies })
+  const supabase = createClient()
   const { data: { user: supabaseUser } } = await supabase.auth.getUser()
   
   // Convert Supabase user to our User type
