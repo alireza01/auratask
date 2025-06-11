@@ -1,106 +1,96 @@
-export interface Task {
-  id: string
-  user_id: string
-  title: string
-  description?: string
-  completed: boolean
-  completed_at?: string | null
-  group_id?: string | null
-  speed_score?: number
-  importance_score?: number
-  emoji?: string
-  order_index: number
-  created_at: string
-  updated_at: string
-  subtasks?: Subtask[]
-  tags?: Tag[]
+import type { Config } from "tailwindcss"
+
+const config: Config = {
+  darkMode: ["class"],
+  content: [
+    './pages/**/*.{ts,tsx}',
+    './components/**/*.{ts,tsx}',
+    './app/**/*.{ts,tsx}',
+    './src/**/*.{ts,tsx}',
+  ],
+  theme: {
+    container: {
+      center: true,
+      padding: "2rem",
+      screens: {
+        "2xl": "1400px",
+      },
+    },
+    extend: {
+      colors: {
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+        sidebar: {
+          background: "hsl(var(--sidebar-background))",
+          foreground: "hsl(var(--sidebar-foreground))",
+          primary: "hsl(var(--sidebar-primary))",
+          "primary-foreground": "hsl(var(--sidebar-primary-foreground))",
+          accent: "hsl(var(--sidebar-accent))",
+          "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
+          border: "hsl(var(--sidebar-border))",
+          ring: "hsl(var(--sidebar-ring))",
+        },
+        chart: {
+          1: "hsl(var(--chart-1))",
+          2: "hsl(var(--chart-2))",
+          3: "hsl(var(--chart-3))",
+          4: "hsl(var(--chart-4))",
+          5: "hsl(var(--chart-5))",
+        },
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+      },
+    },
+  },
+  plugins: [require("tailwindcss-animate")],
 }
 
-export interface Subtask {
-  id: string
-  task_id: string
-  title: string
-  completed: boolean
-  completed_at?: string
-  order_index: number
-  created_at: string
-}
-
-export interface TaskGroup {
-  id: string
-  user_id: string
-  name: string
-  emoji?: string
-  created_at: string
-  updated_at: string
-}
-
-export interface Tag {
-  id: string
-  user_id: string
-  name: string
-  color: "red" | "green" | "blue" | "yellow" | "purple" | "orange"
-  created_at: string
-  updated_at: string
-}
-
-export interface UserSettings {
-  id: string
-  user_id: string
-  gemini_api_key?: string
-  speed_weight: number
-  importance_weight: number
-  auto_ranking: boolean
-  auto_subtasks: boolean
-  auto_tagging: boolean
-  theme: "default" | "alireza" | "neda"
-  created_at: string
-  updated_at: string
-}
-
-export type User = {
-  id: string
-  aud: string
-  role: string
-  email: string
-  email_confirmed_at: string
-  phone: string
-  confirmed_at: string
-  last_sign_in_at: string
-  app_metadata: {
-    provider: string
-    providers: string[]
-  }
-  user_metadata: {
-    avatar_url: string
-    email: string
-    email_change_count: number
-    full_name: string
-    iss: string
-    name: string
-    picture: string
-    provider_id: string
-    sub: string
-  }
-  identities: any[]
-  created_at: string
-  updated_at: string
-}
-
-export interface GuestUser {
-  id: string
-  email: string
-  created_at: string
-}
-
-export interface TaskFormData {
-  title: string
-  description?: string
-  groupId?: string
-  autoRanking: boolean
-  autoSubtasks: boolean
-  speedScore: number
-  importanceScore: number
-  emoji?: string
-  subtasks?: string[]
-}
+export default config

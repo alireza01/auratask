@@ -7,13 +7,11 @@ import { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { useAppStore } from '@/lib/store/appStore'
 import Header from '@/components/header'
 import TaskList from '@/components/task-list'
-import AddTaskModal from '@/components/add-task-modal'
-import EditTaskModal from '@/components/edit-task-modal'
 import SignInPromptModal from '@/components/signin-prompt-modal'
 import ApiKeySetup from '@/components/api-key-setup'
 import SettingsPanel from '@/components/settings/settings-panel'
 import TagsModal from '@/components/tags-modal'
-import { Button } from '@/components/ui/button'
+import { Button, ButtonProps } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useLocalStorage } from '@/hooks/use-local-storage'
@@ -27,7 +25,7 @@ import { SortableContext, verticalListSortingStrategy, arrayMove, useSortable } 
 import { CSS } from '@dnd-kit/utilities'
 import { restrictToVerticalAxis, restrictToParentElement } from '@dnd-kit/modifiers'
 import TaskGroupsBubbles from '@/components/task-groups-bubbles'
-import TaskFormModal from '@/components/task-form-modal'
+import TaskFormModal from './tasks/task-form-modal'
 
 interface TaskDashboardProps {
   user: User | null
