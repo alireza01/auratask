@@ -8,10 +8,11 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 import { motion } from "framer-motion"
-import { Palette, Moon, Sun, Sparkles } from "lucide-react"
+import { Palette, Moon, Sun, Sparkles, Loader2 } from "lucide-react"
 import type { UserSettings, GuestUser } from "@/types"
 import { useDebounce } from "@/hooks/use-debounce"
 import { useTheme } from "@/components/theme/theme-provider"
+import { Button } from "@/components/ui/button"
 
 interface ThemeSelectorProps {
   user: User | GuestUser | null
@@ -23,7 +24,6 @@ export default function ThemeSelector({ user, settings, onSettingsChange }: Them
   const { theme, setTheme } = useTheme()
   const [selectedTheme, setSelectedTheme] = useState<string>(theme)
   const [loading, setLoading] = useState(false)
-  const debouncedTheme = useDebounce(selectedTheme, 500)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -32,52 +32,58 @@ export default function ThemeSelector({ user, settings, onSettingsChange }: Them
     }
   }, [settings])
 
-  // Save theme when debounced value changes
-  useEffect(() => {
-    const saveTheme = async () => {
-      if (debouncedTheme === theme) return
+  const handleThemeSelect = (newTheme: string) => {
+    setSelectedTheme(newTheme)
+    // Only update the visual theme, don't save yet
+    setTheme(newTheme as any)
+  }
 
-      setLoading(true)
+  const handleSaveTheme = async () => {
+    if (selectedTheme === theme) return
 
-      try {
-        // Update theme immediately for better UX
-        setTheme(debouncedTheme as any)
+    setLoading(true)
 
-        if (user && !("isGuest" in user)) { // Only save to Supabase if it's an authenticated user
-          const { data: { user: authUser } } = await supabase.auth.getUser();
-          console.log("Auth UID from Supabase:", authUser?.id);
-          console.log("Attempting to save theme to Supabase with payload:", {
-            user_id: user.id,
-            theme: debouncedTheme,
-            updated_at: new Date().toISOString(),
-          });
-          const { error } = await supabase.from("user_settings").upsert({
-            user_id: user.id,
-            theme: debouncedTheme,
-            updated_at: new Date().toISOString(),
-          }, { onConflict: 'user_id' });
+    try {
+      if (user && !("isGuest" in user)) {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        console.log("Auth UID from Supabase:", authUser?.id);
+        console.log("Attempting to save theme to Supabase with payload:", {
+          user_id: user.id,
+          theme: selectedTheme,
+          updated_at: new Date().toISOString(),
+        });
+        const { error } = await supabase.from("user_settings").upsert({
+          user_id: user.id,
+          theme: selectedTheme,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' });
 
-          if (error) {
-            console.error("Supabase upsert error object:", error)
-            throw error
-          }
+        if (error) {
+          console.error("Supabase upsert error object:", error)
+          throw error
         }
 
-        onSettingsChange()
-      } catch (error) {
-        console.error("خطا در ذخیره تم:", JSON.stringify(error, null, 2))
         toast({
-          title: "خطا در ذخیره تم",
-          description: "مشکلی در ذخیره تم رخ داد. لطفاً دوباره تلاش کنید.",
-          variant: "destructive",
+          title: "تم با موفقیت ذخیره شد",
+          description: "تغییرات شما با موفقیت اعمال شد.",
         })
-      } finally {
-        setLoading(false)
       }
-    }
 
-    saveTheme()
-  }, [debouncedTheme, theme, user, supabase, setTheme, onSettingsChange, toast])
+      onSettingsChange()
+    } catch (error) {
+      console.error("خطا در ذخیره تم:", JSON.stringify(error, null, 2))
+      toast({
+        title: "خطا در ذخیره تم",
+        description: "مشکلی در ذخیره تم رخ داد. لطفاً دوباره تلاش کنید.",
+        variant: "destructive",
+      })
+      // Revert to previous theme on error
+      setTheme(theme as any)
+      setSelectedTheme(theme)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const themes = [
     {
@@ -113,7 +119,7 @@ export default function ThemeSelector({ user, settings, onSettingsChange }: Them
         <CardDescription>ظاهر اپلیکیشن را مطابق سلیقه خود تنظیم کنید.</CardDescription>
       </CardHeader>
       <CardContent>
-        <RadioGroup value={selectedTheme} onValueChange={setSelectedTheme} className="space-y-4" disabled={loading}>
+        <RadioGroup value={selectedTheme} onValueChange={handleThemeSelect} className="space-y-4" disabled={loading}>
           {themes.map((themeOption) => (
             <div key={themeOption.id} className="relative">
               <motion.div
@@ -156,6 +162,23 @@ export default function ThemeSelector({ user, settings, onSettingsChange }: Them
             </div>
           ))}
         </RadioGroup>
+
+        <div className="mt-6 flex justify-end">
+          <Button 
+            onClick={handleSaveTheme}
+            disabled={loading || selectedTheme === theme}
+            className="min-w-[120px]"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                در حال ذخیره...
+              </>
+            ) : (
+              "ذخیره تغییرات"
+            )}
+          </Button>
+        </div>
 
         {loading && (
           <div className="mt-4 text-center">

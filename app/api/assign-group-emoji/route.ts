@@ -1,15 +1,39 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
+import { cookies } from "next/headers"
 
 export async function POST(request: NextRequest) {
   try {
-    const { groupName, apiKey } = await request.json()
+    const { groupName } = await request.json()
 
-    if (!groupName || !apiKey) {
-      return NextResponse.json({ error: "نام گروه و کلید API الزامی است" }, { status: 400 })
+    const cookieStore = cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey)
+    const { data: settings } = await supabase
+      .from("user_settings")
+      .select("gemini_api_key")
+      .eq("user_id", user.id)
+      .single()
+
+    if (!settings?.gemini_api_key) {
+      return NextResponse.json({ error: "Gemini API key not found for user" }, { status: 400 })
+    }
+
+    if (!groupName) {
+      return NextResponse.json({ error: "نام گروه الزامی است" }, { status: 400 })
+    }
+
+    const geminiApiKey = settings.gemini_api_key
+    const genAI = new GoogleGenerativeAI(geminiApiKey)
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
 
     const prompt = `

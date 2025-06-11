@@ -56,19 +56,15 @@ export default function AccountActions({ user }: AccountActionsProps) {
     setLoading(true)
 
     try {
-      // First delete user data
-      const { error: dataError } = await supabase.from("user_settings").delete().eq("user_id", user.id)
+      // Call the secure RPC function to delete the user account
+      const { error } = await supabase.rpc('delete_user_account')
 
-      if (dataError) throw dataError
+      if (error) {
+        throw error
+      }
 
-      // Then delete the user account
-      const { error: authError } = await supabase.auth.admin.deleteUser(user.id)
-
-      if (authError) throw authError
-
-      // Sign out
-      await supabase.auth.signOut()
-
+      // The user will be automatically signed out because their auth record is gone.
+      // The onAuthStateChange listener will handle the redirect.
       toast({
         title: "حساب کاربری حذف شد",
         description: "حساب کاربری شما با موفقیت حذف شد.",

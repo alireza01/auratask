@@ -39,7 +39,7 @@ export interface Tag {
   id: string
   user_id: string
   name: string
-  color: "red" | "green" | "blue" | "yellow" | "purple" | "orange"
+  color: TagColor
   created_at: string
   updated_at: string
 }
@@ -53,7 +53,7 @@ export interface UserSettings {
   auto_ranking: boolean
   auto_subtasks: boolean
   auto_tagging: boolean
-  theme: "default" | "alireza" | "neda"
+  theme: Theme
   created_at: string
   updated_at: string
 }
@@ -104,3 +104,7 @@ export interface TaskFormData {
   emoji?: string
   subtasks?: string[]
 }
+
+// Theme and Tag Color Types
+export type Theme = "default" | "alireza" | "neda";
+export type TagColor = "red" | "green" | "blue" | "yellow" | "purple" | "orange";

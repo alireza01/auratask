@@ -4,20 +4,28 @@ import { cookies } from "next/headers"
 
 export async function POST(request: NextRequest) {
   try {
-    const { title, description, autoRanking, autoSubtasks, userId } = await request.json()
+    const { title, description, autoRanking, autoSubtasks } = await request.json()
 
     const cookieStore = cookies()
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
 
-    // Get user's API key
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Get user's API key and settings
     const { data: settings } = await supabase
       .from("user_settings")
       .select("gemini_api_key, speed_weight, importance_weight")
-      .eq("user_id", userId)
+      .eq("user_id", user.id)
       .single()
 
     if (!settings?.gemini_api_key) {
-      return NextResponse.json({ error: "API key not found" }, { status: 400 })
+      return NextResponse.json({ error: "Gemini API key not found for user" }, { status: 400 })
     }
 
     let result: any = {}
@@ -46,37 +54,13 @@ export async function POST(request: NextRequest) {
     prompt += "\n}"
 
     // Call Gemini API
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${settings.gemini_api_key}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 1000,
-          },
-        }),
-      },
-    )
+    const { GoogleGenerativeAI } = await import("@google/generative-ai")
+    const genAI = new GoogleGenerativeAI(settings.gemini_api_key)
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
 
-    if (!response.ok) {
-      throw new Error("Failed to call Gemini API")
-    }
+    const response = await model.generateContent(prompt)
 
-    const data = await response.json()
-    const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text
+    const aiText = response.response.text()
 
     if (aiText) {
       try {
