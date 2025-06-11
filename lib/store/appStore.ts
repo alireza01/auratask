@@ -151,12 +151,11 @@ export const useAppStore = create<AppState>((set, get) => ({
         ),
       }));
 
-      toast.success('Task updated successfully');
+      return data; // Return the updated task data
     } catch (error) {
       console.error('Failed to update task:', error);
       // Revert optimistic update on error
       set({ tasks: originalTasks });
-      toast.error('Failed to update task. Please try again.');
       throw error;
     }
   },
@@ -190,7 +189,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   // Placeholder for deleteTask action
-  deleteTask: async (supabase: SupabaseClient, taskId: string) => {
+  deleteTask: async (supabase: SupabaseClient, taskId: string): Promise<void> => {
     const originalTasks = get().tasks;
     
     // Optimistic update
@@ -205,13 +204,10 @@ export const useAppStore = create<AppState>((set, get) => ({
         .eq('id', taskId);
 
       if (error) throw error;
-
-      toast.success('Task deleted successfully');
     } catch (error) {
       console.error('Failed to delete task:', error);
       // Revert optimistic update on error
       set({ tasks: originalTasks });
-      toast.error('Failed to delete task. Please try again.');
       throw error;
     }
   },

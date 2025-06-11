@@ -2,7 +2,7 @@
 import React from 'react';
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import type { User, Task, TaskGroup, GuestUser } from '@/types'
+import type { User, Task, GuestUser } from '@/types'
 import { useAppStore } from '@/lib/store/appStore'
 import Header from '@/components/header'
 import TaskList from '@/components/task-list'
@@ -19,7 +19,6 @@ import { v4 as uuidv4 } from 'uuid'
 import { Search, TagIcon, X, Filter, Calendar, Star, CheckCircle2, LayoutDashboard, Plus } from 'lucide-react'
 import StatsDashboard from '@/components/stats-dashboard'
 import { motion, AnimatePresence } from 'framer-motion'
-import { arrayMove } from '@dnd-kit/sortable'
 import TaskGroupsBubbles from '@/components/task-groups-bubbles'
 import TaskFormModal from './tasks/task-form-modal'
 
@@ -38,7 +37,6 @@ export default function TaskDashboard({ user }: TaskDashboardProps) {
     initialize,
     updateTask,
     deleteTask,
-    updateGroup,
   } = useAppStore((state) => ({
     tasks: state.tasks,
     groups: state.groups,
@@ -148,7 +146,24 @@ export default function TaskDashboard({ user }: TaskDashboardProps) {
       }
     }
     initStore()
-  }, [initialize, toast])
+  }, [])
+
+  // Memoize the update handlers
+  const handleTaskUpdate = useCallback(async (taskId: string, updatedFields: Partial<Task>) => {
+    try {
+      await updateTask(supabase, taskId, updatedFields)
+    } catch (error) {
+      console.error('Failed to update task:', error)
+    }
+  }, [updateTask])
+
+  const handleTaskDelete = useCallback(async (taskId: string) => {
+    try {
+      await deleteTask(supabase, taskId)
+    } catch (error) {
+      console.error('Failed to delete task:', error)
+    }
+  }, [deleteTask])
 
   // Supabase Realtime Subscription
   useEffect(() => {
@@ -161,11 +176,11 @@ export default function TaskDashboard({ user }: TaskDashboardProps) {
         { event: "*", schema: "public", table: "tasks", filter: `user_id=eq.${user.id}` },
         (payload: any) => {
           if (payload.eventType === "INSERT") {
-            updateTask(supabase, payload.new.id, payload.new as Task)
+            handleTaskUpdate(payload.new.id, payload.new as Task)
           } else if (payload.eventType === "UPDATE") {
-            updateTask(supabase, payload.new.id, payload.new as Task)
+            handleTaskUpdate(payload.new.id, payload.new as Task)
           } else if (payload.eventType === "DELETE") {
-            deleteTask(supabase, payload.old.id)
+            handleTaskDelete(payload.old.id)
           }
         },
       )
@@ -175,11 +190,9 @@ export default function TaskDashboard({ user }: TaskDashboardProps) {
       .channel("public:subtasks")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "subtasks" }, // Subtasks don't have user_id, need to filter by task_id later if needed
-        async (payload: any) => { // Type any for subtasks as they are not directly Task type
+        { event: "*", schema: "public", table: "subtasks" },
+        async (payload: any) => {
           if (payload.eventType === "INSERT" || payload.eventType === "UPDATE" || payload.eventType === "DELETE") {
-            // Re-fetch tasks to ensure subtasks are updated correctly
-            // A more granular update could be implemented, but re-fetching is simpler for now
             await initialize(supabase)
           }
         },
@@ -190,7 +203,7 @@ export default function TaskDashboard({ user }: TaskDashboardProps) {
       supabase.removeChannel(tasksChannel)
       supabase.removeChannel(subtasksChannel)
     }
-  }, [user, updateTask, deleteTask, initialize])
+  }, [user, handleTaskUpdate, handleTaskDelete])
 
   const applyFilters = useCallback(() => {
     let result = [...tasks]
@@ -274,7 +287,7 @@ export default function TaskDashboard({ user }: TaskDashboardProps) {
   const handleDeleteTask = useCallback(async (taskId: string) => {
     // Optimistic update
     const originalTasks = tasks
-    deleteTask(supabase, taskId)
+    handleTaskDelete(taskId)
 
     try {
       toast({
@@ -283,19 +296,19 @@ export default function TaskDashboard({ user }: TaskDashboardProps) {
       })
     } catch (error) {
       console.error("Error deleting task:", error)
-      updateTask(supabase, taskId, originalTasks.find(t => t.id === taskId) as Task) // Revert on error
+      handleTaskUpdate(taskId, originalTasks.find(t => t.id === taskId) as Partial<Task>) // Revert on error
       toast({
         title: "خطا در حذف وظیفه",
         description: "مشکلی در حذف وظیفه رخ داد.",
         variant: "destructive",
       })
     }
-  }, [user, tasks, deleteTask, updateTask, toast])
+  }, [user, tasks, handleTaskDelete, handleTaskUpdate, toast])
 
   const completeTask = useCallback(async (taskId: string, completed: boolean) => {
     // Optimistic update
     const originalTasks = tasks
-    updateTask(supabase, taskId, { 
+    handleTaskUpdate(taskId, { 
       completed, 
       completed_at: completed ? new Date().toISOString() : null 
     } as Partial<Task>)
@@ -307,14 +320,14 @@ export default function TaskDashboard({ user }: TaskDashboardProps) {
       })
     } catch (error) {
       console.error("Error completing task:", error)
-      updateTask(supabase, taskId, originalTasks.find(t => t.id === taskId) as Task) // Revert on error
+      handleTaskUpdate(taskId, originalTasks.find(t => t.id === taskId) as Partial<Task>) // Revert on error
       toast({
         title: "خطا در تغییر وضعیت وظیفه",
         description: "مشکلی در تغییر وضعیت وظیفه رخ داد.",
         variant: "destructive",
       })
     }
-  }, [user, tasks, updateTask, toast])
+  }, [user, tasks, handleTaskUpdate, toast])
 
   const handleTaskAdded = useCallback(async () => {
     await initialize(supabase) // Realtime will handle this, but keep for initial load consistency

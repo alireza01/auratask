@@ -1,53 +1,45 @@
 import { Inter, Vazirmatn } from 'next/font/google'
-import { Toaster } from 'sonner'
+import { NextIntlClientProvider } from 'next-intl'
 import { ThemeProvider } from '@/components/theme-provider'
-import { cn } from '@/lib/utils'
-import './globals.css'
+import { Toaster } from '@/components/ui/toaster'
+import '../globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
 const vazirmatn = Vazirmatn({ subsets: ['arabic'] })
 
 export const metadata = {
-  title: 'آواتسک - مدیریت هوشمند وظایف',
-  description: 'مدیریت وظایف با قدرت هوش مصنوعی',
-  manifest: '/manifest.json',
-  icons: {
-    icon: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
-  },
-  generator: 'v0.dev'
+  title: 'Aura Task App',
+  description: 'A modern task management application',
 }
 
-export default function RootLayout({
+export default async function LocaleLayout({
   children,
-  params: { locale },
+  params: { locale }
 }: {
   children: React.ReactNode
   params: { locale: string }
 }) {
+  let messages;
+  try {
+    messages = (await import(`../../messages/${locale}.json`)).default;
+  } catch (error) {
+    messages = (await import(`../../messages/en.json`)).default;
+  }
+
   return (
-    <html lang={locale} dir={locale === 'fa' ? 'rtl' : 'ltr'} suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;200;300;400;500;600;700;800;900&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className={cn(
-        locale === 'fa' ? vazirmatn.className : inter.className,
-        'min-h-screen bg-background font-sans antialiased'
-      )}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="default"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-          <Toaster richColors position="top-right" />
-        </ThemeProvider>
+    <html lang={locale} suppressHydrationWarning>
+      <body className={locale === 'fa' ? vazirmatn.className : inter.className}>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            {children}
+            <Toaster />
+          </ThemeProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   )
