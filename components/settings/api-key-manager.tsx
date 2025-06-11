@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabaseClient"
-import type { User } from "@supabase/auth-helpers-nextjs"
+import type { User, GuestUser } from "@/types"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,7 +16,7 @@ import { Key, Eye, EyeOff, ExternalLink, AlertCircle, CheckCircle } from "lucide
 import type { UserSettings } from "@/types"
 
 interface ApiKeyManagerProps {
-  user: User
+  user: User | GuestUser
   settings: UserSettings | null
   onSettingsChange: () => void
 }

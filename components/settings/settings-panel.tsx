@@ -3,12 +3,14 @@
 import { useToast } from "@/components/ui/use-toast"
 import ApiKeyManager from "./api-key-manager"
 import ThemeSelector from "./theme-selector"
-import type { User, UserSettings } from "@/types"
+import type { User, UserSettings, GuestUser } from "@/types"
 
 interface SettingsPanelProps {
-  user: User | null
+  user: User | GuestUser | null
   settings: UserSettings | null
   onSettingsChange: (newSettings: Partial<UserSettings>) => void
+  isOpen: boolean
+  onClose: () => void
 }
 
 export default function SettingsPanel({

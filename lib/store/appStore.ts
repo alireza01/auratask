@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Task, TaskGroup, UserSettings, User, Theme, Tag } from '../../types'; // Adjust path as needed
-import { StateCreator } from 'zustand';
 import { toast } from 'sonner';
 
 // Define the types for your state
@@ -144,6 +143,13 @@ export const useAppStore = create<AppState>((set, get) => ({
         .single();
 
       if (error) throw error;
+
+      // Update state with the actual data from the server
+      set((state) => ({
+        tasks: state.tasks.map((task) =>
+          task.id === taskId ? { ...task, ...data } : task
+        ),
+      }));
 
       toast.success('Task updated successfully');
     } catch (error) {

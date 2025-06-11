@@ -2,20 +2,20 @@
 
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabaseClient"
-import type { User } from "@supabase/auth-helpers-nextjs"
+import type { User, GuestUser } from "@/types"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 import { motion } from "framer-motion"
 import { Palette, Moon, Sun, Sparkles, Loader2 } from "lucide-react"
-import type { UserSettings, GuestUser } from "@/types"
+import type { UserSettings } from "@/types"
 import { useDebounce } from "@/hooks/use-debounce"
 import { useTheme } from "@/components/theme/theme-provider"
 import { Button } from "@/components/ui/button"
 
 interface ThemeSelectorProps {
-  user: User | GuestUser | null
+  user: User | GuestUser
   settings: UserSettings | null
   onSettingsChange: () => void
 }
