@@ -10,7 +10,6 @@ import { useToast } from "@/components/ui/use-toast"
 import { motion } from "framer-motion"
 import { Palette, Moon, Sun, Sparkles, Loader2 } from "lucide-react"
 import type { UserSettings } from "@/types"
-import { useDebounce } from "@/hooks/use-debounce"
 import { useTheme } from "@/components/theme/theme-provider"
 import { Button } from "@/components/ui/button"
 
