@@ -26,7 +26,7 @@ export default function SettingsPanel({
       toast({
         title: "Settings updated",
         description: "Your settings have been saved successfully.",
-        variant: "success",
+        variant: "default",
       })
     } catch (error) {
       toast({

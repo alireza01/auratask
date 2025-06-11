@@ -7,27 +7,27 @@ import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
 
 interface TaskGroupsBubblesProps {
-  user: User | null;
-  guestUser: GuestUser | null;
   groups: TaskGroup[];
   selectedGroup: string | null;
   onGroupSelect: (groupId: string | null) => void;
-  onGroupsChange: () => void;
   onTaskDrop: (taskId: string, groupId: string) => void;
   getTaskCountForGroup: (groupId: string) => number;
   onAddGroup?: () => void;
+  user: User | null;
+  guestUser: GuestUser | null;
+  onGroupsChange: () => Promise<void>;
 }
 
 export default function TaskGroupsBubbles({
-  user,
-  guestUser,
   groups,
   selectedGroup,
   onGroupSelect,
-  onGroupsChange,
   onTaskDrop,
   getTaskCountForGroup,
   onAddGroup,
+  user,
+  guestUser,
+  onGroupsChange,
 }: TaskGroupsBubblesProps) {
   const t = useTranslations('TaskGroups');
 

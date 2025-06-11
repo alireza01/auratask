@@ -1,9 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { supabase } from "@/lib/supabaseClient"
 import { TaskCard } from "@/components/task-card"
-import type { Task, TaskGroup as TaskGroupType, UserSettings, User } from "@/types"
+import type { Task, TaskGroup as TaskGroupType } from "@/types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Archive, RotateCcw, ChevronDown, ChevronUp } from "lucide-react"
@@ -14,8 +13,6 @@ import { DraggableTaskCard } from './draggable-task-card';
 interface TaskListProps {
   tasks: Task[]
   groups: TaskGroupType[]
-  settings: UserSettings | null
-  user: User | null
   onTasksChange: () => void
   onGroupsChange: () => void
   onComplete: (taskId: string, completed: boolean) => Promise<void> // Added for optimistic updates
@@ -26,10 +23,7 @@ interface TaskListProps {
 export default function TaskList({
   tasks,
   groups,
-  settings,
-  user,
   onTasksChange,
-  onGroupsChange,
   onComplete, // Destructure onComplete prop
   onEditTask,
   onDeleteTask,

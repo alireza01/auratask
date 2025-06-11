@@ -2,8 +2,7 @@
 import React from 'react';
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import type { User, Task, TaskGroup, UserSettings, Tag, GuestUser, Theme } from '@/types'
-import { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
+import type { User, Task, TaskGroup, GuestUser } from '@/types'
 import { useAppStore } from '@/lib/store/appStore'
 import Header from '@/components/header'
 import TaskList from '@/components/task-list'
@@ -11,7 +10,7 @@ import SignInPromptModal from '@/components/signin-prompt-modal'
 import ApiKeySetup from '@/components/api-key-setup'
 import SettingsPanel from '@/components/settings/settings-panel'
 import TagsModal from '@/components/tags-modal'
-import { Button, ButtonProps } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useLocalStorage } from '@/hooks/use-local-storage'
@@ -20,10 +19,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { Search, TagIcon, X, Filter, Calendar, Star, CheckCircle2, LayoutDashboard, Plus } from 'lucide-react'
 import StatsDashboard from '@/components/stats-dashboard'
 import { motion, AnimatePresence } from 'framer-motion'
-import { DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, UniqueIdentifier } from '@dnd-kit/core'
-import { SortableContext, verticalListSortingStrategy, arrayMove, useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import { restrictToVerticalAxis, restrictToParentElement } from '@dnd-kit/modifiers'
+import { arrayMove } from '@dnd-kit/sortable'
 import TaskGroupsBubbles from '@/components/task-groups-bubbles'
 import TaskFormModal from './tasks/task-form-modal'
 
@@ -41,12 +37,8 @@ export default function TaskDashboard({ user }: TaskDashboardProps) {
     isLoading,
     initialize,
     updateTask,
-    addTask,
     deleteTask,
-    addGroup,
     updateGroup,
-    deleteGroup,
-    updateSettings
   } = useAppStore((state) => ({
     tasks: state.tasks,
     groups: state.groups,
@@ -55,12 +47,8 @@ export default function TaskDashboard({ user }: TaskDashboardProps) {
     isLoading: state.isLoading,
     initialize: state.initialize,
     updateTask: state.updateTask,
-    addTask: state.addTask,
     deleteTask: state.deleteTask,
-    addGroup: state.addGroup,
     updateGroup: state.updateGroup,
-    deleteGroup: state.deleteGroup,
-    updateSettings: state.updateSettings,
   }))
 
   // UI State
@@ -74,8 +62,6 @@ export default function TaskDashboard({ user }: TaskDashboardProps) {
   const [showTags, setShowTags] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null)
-  const [isDragging, setIsDragging] = useState(false)
-  const [activeId, setActiveId] = useState<string | null>(null)
 
   // Filters
   const [filterGroup, setFilterGroup] = useState<string | null>(null)
@@ -88,80 +74,6 @@ export default function TaskDashboard({ user }: TaskDashboardProps) {
   const [localGuestUser, setLocalGuestUser] = useLocalStorage<GuestUser | null>("aura-guest-user", null)
 
   const { toast } = useToast()
-
-  // Drag and Drop Functionality
-  const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor))
-
-  const handleDragStart = (event: any) => {
-    setActiveId(event.active.id)
-    setIsDragging(true)
-  }
-
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event
-
-    if (!over) return // No valid drop target
-
-    if (active.data.current?.type === "group" && active.id !== over.id) {
-      // Reorder groups
-      const oldIndex = groups.findIndex((group) => group.id === active.id)
-      const newIndex = groups.findIndex((group) => group.id === over.id)
-
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const newGroups = arrayMove(groups, oldIndex, newIndex)
-        // Update group order in store
-        newGroups.forEach((group: TaskGroup, index: number) => {
-          updateGroup(supabase, group.id, { order_index: index } as Partial<TaskGroup>)
-        })
-      }
-    } else if (active.data.current?.type === "task") {
-      const taskId = active.id as string;
-      const overId = over.id as string;
-      const currentTask = tasks.find((t) => t.id === taskId);
-      const overTask = tasks.find((t) => t.id === overId);
-
-      if (!currentTask || !overTask) return;
-
-      const oldGroupId = currentTask.group_id;
-      let newGroupId: string | null = overTask.group_id || null;
-
-      // Determine if dropping onto a group bubble
-      if (over.data.current?.type === "group-container") {
-        newGroupId = over.id as string;
-      }
-
-      // Case 1: Reordering within the same group
-      if (oldGroupId === newGroupId) {
-        const tasksInGroup = tasks
-          .filter((t) => t.group_id === oldGroupId)
-          .sort((a, b) => a.order_index - b.order_index);
-
-        const oldIndex = tasksInGroup.findIndex((t) => t.id === taskId);
-        const newIndex = tasksInGroup.findIndex((t) => t.id === overId);
-
-        if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-          const reorderedTasks = arrayMove(tasksInGroup, oldIndex, newIndex);
-
-          // Update order_index for all affected tasks
-          reorderedTasks.forEach((task: Task, index: number) => {
-            updateTask(supabase, task.id, { order_index: index } as Partial<Task>)
-          })
-        }
-      } else {
-        // Case 2: Moving to a different group
-        const tasksInNewGroup = tasks.filter(t => t.group_id === newGroupId && t.id !== taskId);
-        const newOrderIndex = tasksInNewGroup.length; // Place at the end
-
-        updateTask(supabase, taskId, { 
-          group_id: newGroupId, 
-          order_index: newOrderIndex 
-        } as Partial<Task>)
-      }
-    }
-
-    setActiveId(null)
-    setIsDragging(false)
-  }
 
   const handleTaskDrop = (taskId: string, groupId: string) => {
     const task = tasks.find(t => t.id === taskId)
