@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabaseClient"
-import type { User } from "@supabase/auth-helpers-nextjs"
+import type { User } from "@supabase/supabase-js"
 import ApiKeySetupModal from "./api-key-setup-modal"
 
 interface ApiKeySetupTriggerProps {
