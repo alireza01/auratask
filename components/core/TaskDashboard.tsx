@@ -11,7 +11,7 @@ import { Header } from "./Header" // Assumes Header.tsx
 import { TaskGroupsBubbles } from "@/components/groups/TaskGroupsBubbles" // Assumes TaskGroupsBubbles.tsx
 import { TaskList } from "@/components/tasks/TaskList" // Assumes TaskList.tsx
 import { StatsDashboard } from "@/components/stats/StatsDashboard" // Assumes StatsDashboard.tsx
-import { TaskTabs } from "@/components/tasks/TaskTabs" // Assumes TaskTabs.tsx
+import { TaskTabs } from "@/components/tasks/task-tabs" // Corrected import path
 import { TaskFilters } from "@/components/tasks/TaskFilters" // Assumes TaskFilters.tsx
 import { TaskFormModal } from "@/components/forms/TaskFormModal" // Assumes TaskFormModal.tsx
 import { GroupFormModal } from "@/components/forms/GroupFormModal" // Assumes GroupFormModal.tsx
@@ -151,7 +151,7 @@ export function TaskDashboard() {
           {/* Main Content */}
           <div className="space-y-6">
             {/* Tabs */}
-            <TaskTabs />
+            <TaskTabs tasks={tasks} />
 
             {/* Filters */}
             {showFilters && <TaskFilters />}
