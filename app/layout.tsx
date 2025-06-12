@@ -2,14 +2,17 @@ import type React from "react"
 import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import { ThemeProvider } from "@/components/theme/theme-provider"
+import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/components/auth/AuthProvider"
 import { Toaster } from "@/components/ui/toaster"
 import { ErrorBoundary } from "@/components/core/ErrorBoundary"
 import { CommandPalette } from "@/components/core/CommandPalette"
-import { LevelUpNotification } from "@/components/gamification/LevelUpNotification"
-import { AchievementUnlockNotification } from "@/components/gamification/AchievementUnlockNotification"
-import { AuraNotification } from "@/components/gamification/aura-notification"
+// import { LevelUpNotification } from "@/components/gamification/LevelUpNotification" // Old one
+import { LevelUpToastManager } from "@/components/gamification/LevelUpToastManager" // New manager
+// import { AchievementUnlockNotification } from "@/components/gamification/AchievementUnlockNotification" // Old one
+import { AchievementToastManager } from "@/components/gamification/AchievementToastManager" // New manager
+// import { AuraNotification } from "@/components/gamification/aura-notification" // Removed
+
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -36,7 +39,6 @@ export const metadata: Metadata = {
     title: "AuraTask - Smart Task Management",
     description: "AI-powered task management with gamification",
   },
-    generator: 'v0.dev'
 }
 
 export const viewport: Viewport = {
@@ -78,9 +80,11 @@ export default function RootLayout({
 
                 {/* Global Components */}
                 <CommandPalette />
-                <LevelUpNotification />
-                <AchievementUnlockNotification />
-                <AuraNotification />
+                {/* <LevelUpNotification /> */}
+                <LevelUpToastManager />
+                {/* <AchievementUnlockNotification /> */}
+                <AchievementToastManager />
+                {/* <AuraNotification /> */} {/* Removed */}
                 <Toaster />
               </div>
             </AuthProvider>

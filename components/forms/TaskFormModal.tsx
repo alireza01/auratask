@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Loader2, CalendarIcon, Sparkles, X, Brain, Target } from "lucide-react"
 import { format } from "date-fns"
-import { fa } from "date-fns/locale/fa"
+import { faIR } from "date-fns/locale"
 
 export function TaskFormModal() {
   const t = useTranslations()
@@ -174,7 +174,7 @@ export function TaskFormModal() {
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start text-left font-normal">
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dueDate ? format(dueDate, "PPP", { locale: fa }) : t("tasks.selectDate")}
+                    {dueDate ? format(dueDate, "PPP", { locale: faIR }) : t("tasks.selectDate")}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">

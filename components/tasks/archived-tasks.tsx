@@ -12,7 +12,7 @@ export function ArchivedTasks() {
   const tasks = useAppStore((state) => state.tasks)
   const [isOpen, setIsOpen] = useState(false)
 
-  const completedTasks = tasks.filter((task) => task.completed)
+  const completedTasks = tasks.filter((task) => task.is_completed)
 
   if (completedTasks.length === 0) return null
 
