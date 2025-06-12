@@ -119,37 +119,30 @@ CREATE POLICY "Admins can manage logs" ON public.admin_logs FOR ALL USING (publi
 -- TABLE: groups
 CREATE TABLE public.groups (
     id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-    guest_id text,
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     name text NOT NULL,
     emoji text DEFAULT '📁',
     color text DEFAULT '#BCA9F0',
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT groups_user_or_guest CHECK ((user_id IS NOT NULL AND guest_id IS NULL) OR (user_id IS NULL AND guest_id IS NOT NULL))
+    created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 ALTER TABLE public.groups ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their own groups" ON public.groups FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Guests can manage their groups" ON public.groups FOR ALL USING (user_id IS NULL AND guest_id IS NOT NULL);
 
 -- TABLE: tags
 CREATE TABLE public.tags (
     id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-    guest_id text,
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     name text NOT NULL,
     color text DEFAULT '#6366f1',
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT tags_user_or_guest CHECK ((user_id IS NOT NULL AND guest_id IS NULL) OR (user_id IS NULL AND guest_id IS NOT NULL))
+    created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 ALTER TABLE public.tags ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their own tags" ON public.tags FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Guests can manage their tags" ON public.tags FOR ALL USING (user_id IS NULL AND guest_id IS NOT NULL);
 
 -- TABLE: tasks
 CREATE TABLE public.tasks (
     id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-    guest_id text,
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     group_id uuid REFERENCES public.groups(id) ON DELETE SET NULL,
     title text NOT NULL,
     description text,
@@ -166,28 +159,23 @@ CREATE TABLE public.tasks (
     enable_ai_ranking boolean NOT NULL DEFAULT true,
     enable_ai_subtasks boolean NOT NULL DEFAULT true,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    order_index DOUBLE PRECISION DEFAULT NULL,
-    CONSTRAINT tasks_user_or_guest CHECK ((user_id IS NOT NULL AND guest_id IS NULL) OR (user_id IS NULL AND guest_id IS NOT NULL))
+    order_index DOUBLE PRECISION DEFAULT NULL
 );
 ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their own tasks" ON public.tasks FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Guests can manage their tasks" ON public.tasks FOR ALL USING (user_id IS NULL AND guest_id IS NOT NULL);
 
 -- TABLE: sub_tasks
 CREATE TABLE public.sub_tasks (
     id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     task_id uuid NOT NULL REFERENCES public.tasks(id) ON DELETE CASCADE,
-    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-    guest_id text,
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     title text NOT NULL,
     is_completed boolean NOT NULL DEFAULT false,
     ai_generated boolean NOT NULL DEFAULT false,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT sub_tasks_user_or_guest CHECK ((user_id IS NOT NULL AND guest_id IS NULL) OR (user_id IS NULL AND guest_id IS NOT NULL))
+    created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 ALTER TABLE public.sub_tasks ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their own sub_tasks" ON public.sub_tasks FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Guests can manage their sub_tasks" ON public.sub_tasks FOR ALL USING (user_id IS NULL AND guest_id IS NOT NULL);
 
 -- TABLE: task_tags
 CREATE TABLE public.task_tags (
@@ -197,7 +185,6 @@ CREATE TABLE public.task_tags (
 );
 ALTER TABLE public.task_tags ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their task tags" ON public.task_tags FOR ALL USING (EXISTS (SELECT 1 FROM public.tasks WHERE tasks.id = task_tags.task_id AND tasks.user_id = auth.uid()));
-CREATE POLICY "Guests can manage their task tags" ON public.task_tags FOR ALL USING (EXISTS (SELECT 1 FROM public.tasks WHERE tasks.id = task_tags.task_id AND tasks.guest_id IS NOT NULL));
 
 -- =================================================================
 -- GAMIFICATION
@@ -266,24 +253,6 @@ CREATE POLICY "System can insert user achievements" ON public.user_achievements 
 -- =================================================================
 -- RPC FUNCTIONS
 -- =================================================================
-
--- FUNCTION: migrate_guest_data_to_user()
-CREATE OR REPLACE FUNCTION public.migrate_guest_data_to_user(guest_id_to_migrate text, p_new_user_id uuid)
-RETURNS void AS $$
-DECLARE
-  new_user_id uuid := p_new_user_id;
-BEGIN
-  IF new_user_id IS NULL THEN
-    RAISE EXCEPTION 'New user ID cannot be NULL for migration.';
-  END IF;
-
-  UPDATE public.groups SET user_id = new_user_id, guest_id = NULL WHERE guest_id = guest_id_to_migrate;
-  UPDATE public.tasks SET user_id = new_user_id, guest_id = NULL WHERE guest_id = guest_id_to_migrate;
-  UPDATE public.sub_tasks SET user_id = new_user_id, guest_id = NULL WHERE guest_id = guest_id_to_migrate;
-  UPDATE public.tags SET user_id = new_user_id, guest_id = NULL WHERE guest_id = guest_id_to_migrate;
-
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- FUNCTION: log_event()
 CREATE OR REPLACE FUNCTION public.log_event(p_level text, p_message text, p_metadata jsonb DEFAULT NULL)
@@ -473,19 +442,63 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- FUNCTION: handle_task_completion()
+CREATE OR REPLACE FUNCTION public.handle_task_completion(p_task_id uuid)
+RETURNS public.user_settings
+AS $$
+DECLARE
+    v_task public.tasks%ROWTYPE;
+    v_user_settings_current public.user_settings%ROWTYPE;
+    v_calculated_points integer;
+BEGIN
+    -- Ensure the task exists and belongs to the user
+    SELECT * INTO v_task FROM public.tasks WHERE id = p_task_id AND user_id = auth.uid();
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Task not found (ID: %) or not authorized for user %.', p_task_id, auth.uid();
+    END IF;
+
+    -- Get current user settings
+    SELECT * INTO v_user_settings_current FROM public.user_settings WHERE id = auth.uid();
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'User settings not found for user % (should not happen).', auth.uid();
+    END IF;
+
+    -- Calculate points for this task
+    v_calculated_points := 10; -- Base points
+    IF v_task.ai_importance_score IS NOT NULL AND v_user_settings_current.ai_importance_weight IS NOT NULL THEN
+        v_calculated_points := v_calculated_points + floor(v_task.ai_importance_score * v_user_settings_current.ai_importance_weight);
+    END IF;
+    IF v_task.ai_speed_score IS NOT NULL AND v_user_settings_current.ai_speed_weight IS NOT NULL THEN
+        v_calculated_points := v_calculated_points + floor(v_task.ai_speed_score * v_user_settings_current.ai_speed_weight);
+    END IF;
+
+    -- Update aura points and total tasks completed
+    UPDATE public.user_settings
+    SET aura_points = aura_points + v_calculated_points,
+        total_tasks_completed = COALESCE(total_tasks_completed, 0) + 1
+    WHERE id = auth.uid();
+
+    -- Perform other gamification logic
+    PERFORM public.update_user_streak(auth.uid());
+    PERFORM public.check_level_up(auth.uid());
+    PERFORM public.check_and_award_achievements(auth.uid());
+
+    -- Refetch and return the final state of user_settings
+    SELECT * INTO v_user_settings_current FROM public.user_settings WHERE id = auth.uid();
+    RETURN v_user_settings_current;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- =================================================================
 -- INDEXES
 -- =================================================================
 
 CREATE INDEX idx_tasks_user_id ON public.tasks(user_id);
-CREATE INDEX idx_tasks_guest_id ON public.tasks(guest_id);
 CREATE INDEX idx_tasks_completed ON public.tasks(is_completed);
 CREATE INDEX idx_tasks_due_date ON public.tasks(due_date);
 CREATE INDEX idx_groups_user_id ON public.groups(user_id);
-CREATE INDEX idx_groups_guest_id ON public.groups(guest_id);
 CREATE INDEX idx_sub_tasks_task_id ON public.sub_tasks(task_id);
 CREATE INDEX idx_tags_user_id ON public.tags(user_id);
-CREATE INDEX idx_tags_guest_id ON public.tags(guest_id);
 CREATE INDEX idx_user_settings_aura_points ON public.user_settings(aura_points DESC);
 CREATE INDEX idx_user_settings_username ON public.user_settings(username);
 CREATE INDEX idx_tasks_order_index ON public.tasks(order_index);

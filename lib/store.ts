@@ -14,7 +14,6 @@ interface AuraReward {
 interface AppState {
   // Data State
   user: User | null
-  guestId: string | null
   tasks: Task[]
   groups: TaskGroup[]
   tags: Tag[]
@@ -42,7 +41,6 @@ interface AppState {
 
   // Actions
   setUser: (user: User | null) => void
-  setGuestId: (guestId: string) => void
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
   setDarkMode: (darkMode: boolean) => void
@@ -50,7 +48,6 @@ interface AppState {
   // Data Actions
   fetchInitialData: () => Promise<void>
   refreshTasks: () => Promise<void>
-  migrateGuestData: () => Promise<void>
 
   // Task Actions
   addTask: (task: Omit<Task, "id" | "created_at" | "updated_at">) => Promise<void>
@@ -117,16 +114,12 @@ const initialFilters: TaskFilters = {
   filterTag: null,
 }
 
-// Generate a unique guest ID
-const generateGuestId = () => `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-
 export const useAppStore = create<AppState>()(
   devtools(
     persist(
       (set, get) => ({
         // Initial State
         user: null,
-        guestId: null,
         tasks: [],
         groups: [],
         tags: [],
@@ -150,7 +143,6 @@ export const useAppStore = create<AppState>()(
 
         // Basic Setters
         setUser: (user) => set({ user }),
-        setGuestId: (guestId) => set({ guestId }),
         setLoading: (isLoading) => set({ isLoading }),
         setError: (error) => set({ error }),
         setDarkMode: (darkMode) => {
@@ -164,22 +156,33 @@ export const useAppStore = create<AppState>()(
 
         // Data Fetching
         fetchInitialData: async () => {
-          const { user, guestId } = get()
+          const { user } = get()
 
           set({ isLoading: true, error: null })
 
           try {
             const userId = user?.id
-            let currentGuestId = guestId
 
             // If no user and no guest ID, create one
-            if (!userId && !currentGuestId) {
-              currentGuestId = generateGuestId()
-              set({ guestId: currentGuestId })
-            }
+            // if (!userId && !currentGuestId) { // This whole block should be removed
+            //   currentGuestId = generateGuestId()
+            //   set({ guestId: currentGuestId })
+            // }
 
             // Build query conditions
-            const queryConditions = userId ? { user_id: userId } : { guest_id: currentGuestId }
+            if (!userId) {
+              // No user (not even anonymous), so clear data or set to empty
+              set({
+                tasks: [],
+                groups: [],
+                tags: [],
+                settings: null,
+                isLoading: false,
+                error: "User not authenticated" // Or null if preferred
+              });
+              return;
+            }
+            const queryConditions = { user_id: userId };
 
             const [tasksRes, groupsRes, tagsRes, settingsRes] = await Promise.all([
               supabase
@@ -274,10 +277,14 @@ export const useAppStore = create<AppState>()(
         },
 
         refreshTasks: async () => {
-          const { user, guestId } = get()
+          const { user } = get()
 
           try {
-            const queryConditions = user?.id ? { user_id: user.id } : { guest_id: guestId }
+            if (!user?.id) {
+              set({ tasks: [] }); // Clear tasks if no user
+              return;
+            }
+            const queryConditions = { user_id: user.id };
 
             const { data, error } = await supabase
               .from("tasks")
@@ -327,62 +334,20 @@ export const useAppStore = create<AppState>()(
             console.error("Error refreshing tasks:", error)
             toast.error("خطا در به‌روزرسانی وظایف")
           }
-        },
-
-        migrateGuestData: async (newUserId: string) => {
-          const { guestId } = get()
-          if (!guestId) {
-            console.log("No guestId found, skipping migration.")
-            return
-          }
-          if (!newUserId) {
-            console.error("New user ID not provided for migration.")
-            toast.error("خطا: شناسه کاربر جدید برای انتقال اطلاعات یافت نشد.")
-            return
-          }
-
-          set({ isLoading: true })
-          try {
-            const response = await fetch("/api/migrate-guest-data", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                guest_user_id: guestId,
-                new_user_id: newUserId,
-              }),
-            })
-
-            if (!response.ok) {
-              const errorData = await response.json()
-              throw new Error(errorData.message || "Failed to migrate data from API")
-            }
-
-            // Clear guest ID and refresh data for the new user
-            set({ guestId: null, isLoading: false })
-            await get().fetchInitialData() // This will now fetch data for the logged-in user
-
-            toast.success("اطلاعات با موفقیت منتقل شد")
-          } catch (error: any) {
-            console.error("Error migrating guest data:", error)
-            toast.error(`خطا در انتقال اطلاعات: ${error.message}`)
-            set({ isLoading: false })
-          }
-        },
-
         // Task Actions
         addTask: async (taskData) => {
-          const { user, guestId, tasks: currentTasks } = get() // Added tasks to get current list
+          const { user, tasks: currentTasks } = get() // Added tasks to get current list
 
           try {
             // Calculate new order_index
             const maxOrderIndex = currentTasks.reduce((max, t) => Math.max(max, t.order_index || 0), 0)
             const newOrderIndex = maxOrderIndex + 10000
 
-            const insertData = user?.id
-              ? { ...taskData, user_id: user.id, order_index: newOrderIndex }
-              : { ...taskData, guest_id: guestId, order_index: newOrderIndex }
+            if (!user?.id) {
+              toast.error("User not identified. Cannot add task.");
+              return;
+            }
+            const insertData = { ...taskData, user_id: user.id, order_index: newOrderIndex };
 
             const { data, error } = await supabase
               .from("tasks")
@@ -451,7 +416,7 @@ export const useAppStore = create<AppState>()(
         },
 
         toggleTaskComplete: async (taskId) => {
-          const { tasks, awardAura, settings: currentSettings } = get() // Renamed to avoid conflict if 'settings' is used later
+          const { tasks, settings: currentSettings } = get()
           const task = tasks.find((t) => t.id === taskId)
           if (!task) return
 
@@ -459,33 +424,42 @@ export const useAppStore = create<AppState>()(
             is_completed: !task.is_completed,
           }
 
-          // Optimistic update
+          // Optimistic update for task completion status
           set((state) => ({
             tasks: state.tasks.map((t) => (t.id === taskId ? { ...t, ...updates } : t)),
           }))
 
           try {
-            const { error } = await supabase.from("tasks").update(updates).eq("id", taskId)
+            // Update task in DB
+            const { error: taskUpdateError } = await supabase.from("tasks").update(updates).eq("id", taskId)
 
-            if (error) throw error
+            if (taskUpdateError) throw taskUpdateError
 
-            // Award aura points for completing task
+            // If task is marked complete, call RPC for gamification
             if (updates.is_completed) {
-              const basePoints = 10
-              // const settings = get().settings; // Accessing settings as planned
-              const importanceBonus = currentSettings ? Math.floor((task.ai_importance_score || 0) * currentSettings.ai_importance_weight) : 0;
-              const speedBonus = currentSettings ? Math.floor((task.ai_speed_score || 0) * currentSettings.ai_speed_weight) : 0;
-              const totalPoints = basePoints + importanceBonus + speedBonus
+              const { data: updatedSettings, error: rpcError } = await supabase
+                .rpc('handle_task_completion', { p_task_id: taskId });
 
-              await awardAura(totalPoints, "تکمیل وظیفه")
+              if (rpcError) {
+                console.error('Error calling handle_task_completion RPC:', rpcError);
+                toast.error('خطا در به‌روزرسانی امتیازات و سطح شما');
+                // Potentially revert optimistic is_completed here, or rely on a full refresh if critical
+              } else if (updatedSettings) {
+                const previousLevel = get().settings?.level || 0; // Get current level from store before setting new settings
+                set({ settings: updatedSettings });
+                if (updatedSettings.level > previousLevel) {
+                  get().setJustLeveledUpTo(updatedSettings.level);
+                }
+                // Achievement toasts are expected to be handled by existing listeners or future enhancements.
+              }
             }
 
             toast.success(updates.is_completed ? "وظیفه تکمیل شد" : "وظیفه به حالت ناتمام برگشت")
           } catch (error) {
             console.error("Error toggling task completion:", error)
             toast.error("خطا در تغییر وضعیت وظیفه")
-            // Revert optimistic update
-            get().refreshTasks()
+            // Revert optimistic update for the specific task or refresh all tasks
+            get().refreshTasks() // Or more targeted revert: set((state) => ({ tasks: state.tasks.map((t) => (t.id === taskId ? { ...t, is_completed: task.is_completed } : t))}))
           }
         },
 
@@ -546,12 +520,14 @@ export const useAppStore = create<AppState>()(
         },
 
         addSubtask: async (taskId, subtaskTitle) => {
-          const { user, guestId } = get()
+          const { user } = get()
 
           try {
-            const insertData = user?.id
-              ? { task_id: taskId, user_id: user.id, title: subtaskTitle, is_completed: false }
-              : { task_id: taskId, guest_id: guestId, title: subtaskTitle, is_completed: false }
+            if (!user?.id) {
+              toast.error("User not identified. Cannot add subtask.");
+              return;
+            }
+            const insertData = { task_id: taskId, user_id: user.id, title: subtaskTitle, is_completed: false };
 
             const { data, error } = await supabase.from("sub_tasks").insert(insertData).select().single()
 
@@ -683,10 +659,14 @@ export const useAppStore = create<AppState>()(
 
         // Group Actions
         addGroup: async (groupData) => {
-          const { user, guestId } = get()
+          const { user } = get()
 
           try {
-            const insertData = user?.id ? { ...groupData, user_id: user.id } : { ...groupData, guest_id: guestId }
+            if (!user?.id) {
+              toast.error("User not identified. Cannot add group.");
+              return;
+            }
+            const insertData = { ...groupData, user_id: user.id };
 
             const { data, error } = await supabase.from("groups").insert([insertData]).select().single()
 
@@ -787,10 +767,14 @@ export const useAppStore = create<AppState>()(
 
         // Tag Actions
         addTag: async (tagData) => {
-          const { user, guestId } = get()
+          const { user } = get()
 
           try {
-            const insertData = user?.id ? { ...tagData, user_id: user.id } : { ...tagData, guest_id: guestId }
+            if (!user?.id) {
+              toast.error("User not identified. Cannot add tag.");
+              return;
+            }
+            const insertData = { ...tagData, user_id: user.id };
 
             const { data, error } = await supabase.from("tags").insert([insertData]).select().single()
 
@@ -1049,58 +1033,44 @@ export const useAppStore = create<AppState>()(
 
         // Gamification Actions
         awardAura: async (points, reason) => {
-          const { user, settings, setJustLeveledUpTo } = get() // Add setJustLeveledUpTo
+          const { user, settings } = get()
           if (!user || !settings) return
 
           try {
-            const originalLevel = settings.level || 1
             const newAuraPoints = (settings.aura_points || 0) + points
-            // Level calculation logic might be more complex if using a formula like in check_level_up
-            // For now, let's assume a simple 100 points per level for client-side prediction
-            // Or, better, let check_level_up handle the authoritative level update.
-            // However, awardAura currently updates level directly.
-            // We need to ensure this aligns with how check_level_up would calculate it, or rely on check_level_up.
-            // For this subtask, we'll react to the level change made by awardAura itself.
-            const newPredictedLevel = Math.floor(newAuraPoints / (settings.level_up_xp_threshold || 100)) + (settings.level_up_xp_threshold ? 0 : 1) // Simplified: this needs to be robust
-                                      // A better approach: awardAura updates points, then call an RPC to check level and get new level state.
-                                      // For now, use the level already calculated by awardAura.
-
-            const newLevelFromAwardAura = Math.floor(newAuraPoints / 100) + 1 // This is the current simple logic in awardAura
 
             const { error } = await supabase
               .from("user_settings")
               .update({
                 aura_points: newAuraPoints,
-                level: newLevelFromAwardAura, // Using the level calculated by awardAura
+                // Level is no longer updated directly here. It's handled by check_level_up RPC.
               })
               .eq("id", user.id)
 
             if (error) throw error
 
-            // Update local state
+            // Update local state for aura points only
             set((state) => ({
               settings: state.settings
                 ? {
                     ...state.settings,
                     aura_points: newAuraPoints,
-                    level: newLevelFromAwardAura,
+                    // Level is not updated here anymore.
                   }
                 : null,
             }))
 
-            if (newLevelFromAwardAura > originalLevel) {
-              setJustLeveledUpTo(newLevelFromAwardAura)
-            }
+            // Level up toasts are now handled by the calling function if it gets updated settings (e.g., toggleTaskComplete)
+            // or by listeners if other mechanisms update levels.
+            // No setJustLeveledUpTo(newLevelFromAwardAura) call here.
 
             showAuraAwardToast(points, reason)
           } catch (error) {
             console.error("Error awarding aura:", error)
-            // Potentially show an error toast here if awarding aura itself fails critically
-            // toast.error("خطا در ثبت امتیاز آئورا");
+            toast.error("خطا در ثبت امتیاز آئورا"); // Keep error toast for aura point update failure
           }
         },
 
-        // clearAuraReward: () => set({ /* lastAuraReward: null */ }), // REMOVING NOW
         setJustLeveledUpTo: (level) => set({ justLeveledUpTo: level }),
         setNewlyUnlockedAchievement: (achievement) => set({ newlyUnlockedAchievement: achievement }),
 
@@ -1141,7 +1111,6 @@ export const useAppStore = create<AppState>()(
           activeTab: state.activeTab,
           filters: state.filters,
           showFilters: state.showFilters,
-          guestId: state.guestId,
         }),
       },
     ),
