@@ -36,7 +36,6 @@ export const metadata: Metadata = {
     title: "AuraTask - Smart Task Management",
     description: "AI-powered task management with gamification",
   },
-    generator: 'v0.dev'
 }
 
 export const viewport: Viewport = {

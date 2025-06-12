@@ -26,6 +26,7 @@ export function GroupFormModal({ open, onOpenChange, group }: GroupFormModalProp
   const { toast } = useToast()
   const { user, addGroup, updateGroup } = useAppStore()
   const [name, setName] = useState(group?.name || "")
+  const [color, setColor] = useState(group?.color || "#BCA9F0")
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,13 +38,16 @@ export function GroupFormModal({ open, onOpenChange, group }: GroupFormModalProp
 
       if (group) {
         // Update existing group
-        const { error } = await supabase.from("task_groups").update({ name: name.trim() }).eq("id", group.id)
+        const { error } = await supabase
+          .from("task_groups")
+          .update({ name: name.trim(), color: color })
+          .eq("id", group.id)
 
         if (error) throw error
-        updateGroup(group.id, { name: name.trim() })
+        updateGroup(group.id, { name: name.trim(), color: color })
       } else {
         // Create new group
-        const emoji = await generateGroupEmoji(name.trim(), "#BCA9F0", user!.id); // Assuming a default color or add color selection later
+        const emoji = await generateGroupEmoji(name.trim(), color, user!.id);
         const { data, error } = await supabase
           .from("task_groups")
           .insert([
@@ -51,6 +55,7 @@ export function GroupFormModal({ open, onOpenChange, group }: GroupFormModalProp
               user_id: user!.id,
               name: name.trim(),
               emoji: emoji,
+              color: color,
             },
           ])
           .select()
@@ -98,6 +103,17 @@ export function GroupFormModal({ open, onOpenChange, group }: GroupFormModalProp
               onChange={(e) => setName(e.target.value)}
               placeholder="مثال: کار، شخصی، خرید"
               required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="groupColor">رنگ گروه</Label>
+            <Input
+              id="groupColor"
+              type="color"
+              value={color}
+              onChange={(e) => setColor(e.target.value)}
+              className="w-full" // Added for better styling, assuming it's needed
             />
           </div>
 

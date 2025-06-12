@@ -8,6 +8,7 @@ import { Trophy, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
+import { getThemeConfig } from "@/lib/theme-config";
 
 interface Achievement {
   id: string
@@ -31,7 +32,9 @@ const rarityColors = {
 }
 
 export function AchievementUnlockNotification({ achievement, onClose }: AchievementUnlockNotificationProps) {
-  const { theme } = useTheme()
+  const { theme: currentTheme } = useTheme()
+  const themeName = (currentTheme === "system" || !currentTheme) ? "default" : currentTheme;
+  const themeConfig = getThemeConfig(themeName);
 
   useEffect(() => {
     // Trigger haptic feedback
@@ -46,14 +49,6 @@ export function AchievementUnlockNotification({ achievement, onClose }: Achievem
 
     return () => clearTimeout(timer)
   }, [onClose])
-
-  // Mozi Banana signature for Alireza theme
-  const getAchievementIcon = () => {
-    if (theme === "alireza") {
-      return "🍌" // Mozi Banana signature
-    }
-    return <Trophy className="w-5 h-5" />
-  }
 
   return (
     <AnimatePresence>
@@ -72,7 +67,7 @@ export function AchievementUnlockNotification({ achievement, onClose }: Achievem
         <Card
           className={cn(
             "p-4 shadow-xl border-2 backdrop-blur-md",
-            theme === "alireza"
+            themeName === "alireza"
               ? "border-yellow-400 bg-gray-900/90 yellow-glow"
               : "border-yellow-300 bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20",
           )}
@@ -91,18 +86,18 @@ export function AchievementUnlockNotification({ achievement, onClose }: Achievem
                 className={cn(
                   "p-2 rounded-lg text-white flex items-center justify-center",
                   `bg-gradient-to-br ${rarityColors[achievement.rarity]}`,
-                  theme === "alireza" && "bg-yellow-400/20 border border-yellow-400/50",
+                  themeName === "alireza" && "bg-yellow-400/20 border border-yellow-400/50",
                 )}
               >
-                {getAchievementIcon()}
+                {themeConfig.achievementIcon}
               </motion.div>
               <div>
-                <h3 className={cn("font-semibold text-sm", theme === "alireza" && "text-yellow-400")}>دستاورد جدید!</h3>
+                <h3 className={cn("font-semibold text-sm", themeName === "alireza" && "text-yellow-400")}>دستاورد جدید!</h3>
                 <Badge
                   className={cn(
                     "text-xs",
                     `bg-gradient-to-r ${rarityColors[achievement.rarity]} text-white`,
-                    theme === "alireza" && "bg-yellow-400/20 text-yellow-400 border-yellow-400/30",
+                    themeName === "alireza" && "bg-yellow-400/20 text-yellow-400 border-yellow-400/30",
                   )}
                 >
                   {achievement.rarity}
@@ -113,7 +108,7 @@ export function AchievementUnlockNotification({ achievement, onClose }: Achievem
               variant="ghost"
               size="sm"
               onClick={onClose}
-              className={cn("h-6 w-6 p-0", theme === "alireza" && "hover:bg-yellow-400/20 hover:text-yellow-400")}
+              className={cn("h-6 w-6 p-0", themeName === "alireza" && "hover:bg-yellow-400/20 hover:text-yellow-400")}
             >
               <X className="w-4 h-4" />
             </Button>
@@ -121,14 +116,14 @@ export function AchievementUnlockNotification({ achievement, onClose }: Achievem
 
           <div className="space-y-3">
             <div>
-              <h4 className={cn("font-medium", theme === "alireza" && "text-yellow-400")}>{achievement.description}</h4>
+              <h4 className={cn("font-medium", themeName === "alireza" && "text-yellow-400")}>{achievement.description}</h4>
               <p className="text-sm text-muted-foreground">{achievement.name}</p>
             </div>
 
             <div className="flex items-center justify-between pt-2">
               <div className="flex items-center gap-2">
-                <Trophy className={cn("w-4 h-4", theme === "alireza" ? "text-yellow-400" : "text-yellow-500")} />
-                <span className={cn("text-sm font-medium", theme === "alireza" && "text-yellow-400")}>
+                <Trophy className={cn("w-4 h-4", themeName === "alireza" ? "text-yellow-400" : "text-yellow-500")} />
+                <span className={cn("text-sm font-medium", themeName === "alireza" && "text-yellow-400")}>
                   +{achievement.reward_points} امتیاز
                 </span>
               </div>
@@ -144,7 +139,7 @@ export function AchievementUnlockNotification({ achievement, onClose }: Achievem
                 }}
                 className="text-xl"
               >
-                {theme === "alireza" ? "🍌" : "✨"}
+                {themeConfig.celebrationIcon}
               </motion.div>
             </div>
           </div>
@@ -154,7 +149,7 @@ export function AchievementUnlockNotification({ achievement, onClose }: Achievem
             {Array.from({ length: 6 }).map((_, i) => (
               <motion.div
                 key={i}
-                className={cn("absolute w-2 h-2 rounded-full", theme === "alireza" ? "bg-yellow-400" : "bg-yellow-500")}
+                className={cn("absolute w-2 h-2 rounded-full", themeName === "alireza" ? "bg-yellow-400" : "bg-yellow-500")}
                 initial={{
                   x: "50%",
                   y: "50%",
