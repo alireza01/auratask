@@ -307,25 +307,45 @@ export const useAppStore = create<AppState>()(
           }
         },
 
-        migrateGuestData: async () => {
+        migrateGuestData: async (newUserId: string) => {
           const { guestId } = get()
-          if (!guestId) return
+          if (!guestId) {
+            console.log("No guestId found, skipping migration.")
+            return
+          }
+          if (!newUserId) {
+            console.error("New user ID not provided for migration.")
+            toast.error("خطا: شناسه کاربر جدید برای انتقال اطلاعات یافت نشد.")
+            return
+          }
 
+          set({ isLoading: true })
           try {
-            const { error } = await supabase.rpc("migrate_guest_data_to_user", {
-              guest_id_to_migrate: guestId,
+            const response = await fetch("/api/migrate-guest-data", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                guest_user_id: guestId,
+                new_user_id: newUserId,
+              }),
             })
 
-            if (error) throw error
+            if (!response.ok) {
+              const errorData = await response.json()
+              throw new Error(errorData.message || "Failed to migrate data from API")
+            }
 
-            // Clear guest ID and refresh data
-            set({ guestId: null })
-            await get().fetchInitialData()
+            // Clear guest ID and refresh data for the new user
+            set({ guestId: null, isLoading: false })
+            await get().fetchInitialData() // This will now fetch data for the logged-in user
 
             toast.success("اطلاعات با موفقیت منتقل شد")
-          } catch (error) {
+          } catch (error: any) {
             console.error("Error migrating guest data:", error)
-            toast.error("خطا در انتقال اطلاعات")
+            toast.error(`خطا در انتقال اطلاعات: ${error.message}`)
+            set({ isLoading: false })
           }
         },
 
@@ -402,7 +422,7 @@ export const useAppStore = create<AppState>()(
         },
 
         toggleTaskComplete: async (taskId) => {
-          const { tasks, awardAura } = get()
+          const { tasks, awardAura, settings: currentSettings } = get() // Renamed to avoid conflict if 'settings' is used later
           const task = tasks.find((t) => t.id === taskId)
           if (!task) return
 
@@ -423,8 +443,9 @@ export const useAppStore = create<AppState>()(
             // Award aura points for completing task
             if (updates.is_completed) {
               const basePoints = 10
-              const importanceBonus = Math.floor((task.ai_importance_score || 0) / 4)
-              const speedBonus = Math.floor((task.ai_speed_score || 0) / 4)
+              // const settings = get().settings; // Accessing settings as planned
+              const importanceBonus = currentSettings ? Math.floor((task.ai_importance_score || 0) * currentSettings.ai_importance_weight) : 0;
+              const speedBonus = currentSettings ? Math.floor((task.ai_speed_score || 0) * currentSettings.ai_speed_weight) : 0;
               const totalPoints = basePoints + importanceBonus + speedBonus
 
               await awardAura(totalPoints, "تکمیل وظیفه")

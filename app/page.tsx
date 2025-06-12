@@ -40,7 +40,7 @@ export default function HomePage() {
 
           // If we have a guest ID, migrate the data
           if (guestId) {
-            await migrateGuestData()
+            await migrateGuestData(session.user.id)
           }
         } else {
           // No user session, continue as guest
@@ -70,7 +70,7 @@ export default function HomePage() {
 
         // If we have guest data, migrate it
         if (guestId) {
-          await migrateGuestData()
+          await migrateGuestData(session.user.id)
         } else {
           await fetchInitialData()
         }

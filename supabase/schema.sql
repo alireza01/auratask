@@ -239,13 +239,13 @@ CREATE POLICY "System can insert user achievements" ON public.user_achievements 
 -- =================================================================
 
 -- FUNCTION: migrate_guest_data_to_user()
-CREATE OR REPLACE FUNCTION public.migrate_guest_data_to_user(guest_id_to_migrate text)
+CREATE OR REPLACE FUNCTION public.migrate_guest_data_to_user(guest_id_to_migrate text, p_new_user_id uuid)
 RETURNS void AS $$
 DECLARE
-  new_user_id uuid := auth.uid();
+  new_user_id uuid := p_new_user_id;
 BEGIN
   IF new_user_id IS NULL THEN
-    RAISE EXCEPTION 'User must be authenticated to migrate data.';
+    RAISE EXCEPTION 'New user ID cannot be NULL for migration.';
   END IF;
 
   UPDATE public.groups SET user_id = new_user_id, guest_id = NULL WHERE guest_id = guest_id_to_migrate;
@@ -266,11 +266,135 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- FUNCTION: check_and_award_achievements()
 CREATE OR REPLACE FUNCTION public.check_and_award_achievements(p_user_id uuid)
-RETURNS void AS $$-- ... (Function body from gamification-schema.sql) ...$$ LANGUAGE plpgsql SECURITY DEFINER;
+RETURNS void AS $$
+DECLARE
+    v_total_tasks_completed integer;
+    v_achievement_name text;
+    v_achievement_id bigint;
+    v_reward_points integer;
+    v_qualifies boolean;
+    v_already_unlocked boolean;
+
+    -- Define achievement criteria: name, required_tasks
+    -- We fetch the actual reward_points from the achievements table.
+    achievements_criteria CURSOR FOR
+        SELECT name,
+               CASE name
+                   WHEN 'first_task' THEN 1
+                   WHEN 'task_novice' THEN 10
+                   WHEN 'task_apprentice' THEN 25
+                   WHEN 'task_expert' THEN 50
+                   WHEN 'task_master' THEN 100
+                   ELSE 0 -- Should not happen if names are correct
+               END as required_tasks
+        FROM public.achievements
+        WHERE name IN ('first_task', 'task_novice', 'task_apprentice', 'task_expert', 'task_master');
+
+    achievement_row RECORD;
+BEGIN
+    -- Get total tasks completed by the user
+    SELECT total_tasks_completed INTO v_total_tasks_completed
+    FROM public.user_settings
+    WHERE id = p_user_id;
+
+    IF NOT FOUND THEN
+        RAISE NOTICE 'User % not found in user_settings or no tasks recorded.', p_user_id;
+        RETURN;
+    END IF;
+
+    IF v_total_tasks_completed IS NULL THEN
+        v_total_tasks_completed := 0;
+    END IF;
+
+    -- Loop through defined achievements
+    FOR achievement_row IN achievements_criteria LOOP
+        v_achievement_name := achievement_row.name;
+
+        v_qualifies := (v_total_tasks_completed >= achievement_row.required_tasks);
+
+        IF v_qualifies THEN
+            SELECT a.id, a.reward_points INTO v_achievement_id, v_reward_points
+            FROM public.achievements a
+            WHERE a.name = v_achievement_name;
+
+            IF NOT FOUND THEN
+                RAISE WARNING 'Achievement % not found in achievements table.', v_achievement_name;
+                CONTINUE;
+            END IF;
+
+            SELECT EXISTS (
+                SELECT 1 FROM public.user_achievements ua
+                WHERE ua.user_id = p_user_id AND ua.achievement_id = v_achievement_id
+            ) INTO v_already_unlocked;
+
+            IF NOT v_already_unlocked THEN
+                INSERT INTO public.user_achievements (user_id, achievement_id, unlocked_at)
+                VALUES (p_user_id, v_achievement_id, NOW());
+
+                UPDATE public.user_settings
+                SET aura_points = aura_points + v_reward_points
+                WHERE id = p_user_id;
+
+                RAISE NOTICE 'User % awarded achievement % (ID: %)', p_user_id, v_achievement_name, v_achievement_id;
+            END IF;
+        END IF;
+    END LOOP;
+
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- FUNCTION: update_user_streak()
 CREATE OR REPLACE FUNCTION public.update_user_streak(p_user_id uuid)
-RETURNS void AS $$-- ... (Function body from gamification-schema.sql) ...$$ LANGUAGE plpgsql SECURITY DEFINER;
+RETURNS void AS $$
+DECLARE
+    v_user_settings RECORD;
+    v_new_current_streak integer;
+    v_new_longest_streak integer;
+    v_today_date date := CURRENT_DATE;
+    v_last_completion_date date;
+BEGIN
+    SELECT current_streak, longest_streak, last_task_completed_at
+    INTO v_user_settings
+    FROM public.user_settings
+    WHERE id = p_user_id;
+
+    IF NOT FOUND THEN
+        RAISE NOTICE 'User % not found in user_settings.', p_user_id;
+        RETURN;
+    END IF;
+
+    v_new_current_streak := COALESCE(v_user_settings.current_streak, 0);
+    v_new_longest_streak := COALESCE(v_user_settings.longest_streak, 0);
+
+    IF v_user_settings.last_task_completed_at IS NULL THEN
+        v_new_current_streak := 1;
+    ELSE
+        v_last_completion_date := DATE(v_user_settings.last_task_completed_at);
+
+        IF v_last_completion_date = v_today_date THEN
+            RAISE NOTICE 'Task already completed today for user %. Streak not incremented yet.', p_user_id;
+        ELSIF v_last_completion_date = v_today_date - INTERVAL '1 day' THEN
+            v_new_current_streak := v_new_current_streak + 1;
+        ELSE
+            v_new_current_streak := 1;
+        END IF;
+    END IF;
+
+    IF v_new_current_streak > v_new_longest_streak THEN
+        v_new_longest_streak := v_new_current_streak;
+    END IF;
+
+    UPDATE public.user_settings
+    SET
+        current_streak = v_new_current_streak,
+        longest_streak = v_new_longest_streak,
+        last_task_completed_at = NOW()
+    WHERE id = p_user_id;
+
+    RAISE NOTICE 'User % streak updated. Current: %, Longest: %', p_user_id, v_new_current_streak, v_new_longest_streak;
+
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- FUNCTION: calculate_next_level_xp()
 CREATE OR REPLACE FUNCTION public.calculate_next_level_xp(current_level integer)
@@ -282,7 +406,57 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 
 -- FUNCTION: check_level_up()
 CREATE OR REPLACE FUNCTION public.check_level_up(p_user_id uuid)
-RETURNS boolean AS $$-- ... (Function body from gamification-schema.sql) ...$$ LANGUAGE plpgsql SECURITY DEFINER;
+RETURNS boolean AS $$
+DECLARE
+    v_current_level integer;
+    v_current_aura_points integer;
+    v_xp_threshold integer;
+    v_leveled_up boolean := FALSE;
+BEGIN
+    SELECT
+        level,
+        aura_points,
+        level_up_xp_threshold
+    INTO
+        v_current_level,
+        v_current_aura_points,
+        v_xp_threshold
+    FROM public.user_settings
+    WHERE id = p_user_id;
+
+    IF NOT FOUND THEN
+        RAISE NOTICE 'User % not found in user_settings.', p_user_id;
+        RETURN FALSE;
+    END IF;
+
+    IF v_xp_threshold IS NULL THEN
+        v_xp_threshold := public.calculate_next_level_xp(v_current_level);
+    END IF;
+
+    WHILE v_current_aura_points >= v_xp_threshold LOOP
+        v_leveled_up := TRUE;
+
+        v_current_level := v_current_level + 1;
+        v_current_aura_points := v_current_aura_points - v_xp_threshold;
+        v_xp_threshold := public.calculate_next_level_xp(v_current_level);
+
+        RAISE NOTICE 'User % leveled up to level %! Remaining Aura: %, Next Threshold: %',
+                     p_user_id, v_current_level, v_current_aura_points, v_xp_threshold;
+    END LOOP;
+
+    IF v_leveled_up THEN
+        UPDATE public.user_settings
+        SET
+            level = v_current_level,
+            aura_points = v_current_aura_points,
+            level_up_xp_threshold = v_xp_threshold
+        WHERE id = p_user_id;
+    END IF;
+
+    RETURN v_leveled_up;
+
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- =================================================================
 -- INDEXES
