@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState } from "react"
 import { useTranslations } from "next-intl"
@@ -100,7 +100,7 @@ export default function AdminPage() {
       setUserGrowth(userGrowthData || [])
       setTaskStats(taskStatsData || [])
       setLogs(logsData || [])
-      setApiKeys(apiKeysData || [])
+      setApiKeys(apiKeysData as ApiKeyClient[] || [])
     } catch (error) {
       console.error("Error fetching admin data:", error)
     } finally {
