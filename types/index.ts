@@ -17,6 +17,7 @@ export interface UserSettings {
   ai_importance_weight: number
   dark_mode?: boolean
   theme?: "default" | "alireza" | "neda"
+  haptic_feedback_enabled: boolean;
   created_at: string
 }
 

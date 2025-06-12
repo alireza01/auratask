@@ -162,7 +162,9 @@
     "removeApiKey": "حذف کلید API",
     "dangerZone": "منطقه خطرناک",
     "deleteAccount": "حذف حساب کاربری",
-    "deleteAccountWarning": "این عمل غیرقابل بازگشت است"
+    "deleteAccountWarning": "این عمل غیرقابل بازگشت است",
+    "hapticFeedback": "بازخورد لمسی",
+    "hapticFeedbackDescription": "فعال کردن لرزش برای اعلان‌ها در موبایل."
   },
   "stats": {
     "statistics": "آمار",

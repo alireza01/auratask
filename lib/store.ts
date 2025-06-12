@@ -101,6 +101,9 @@ interface AppState {
   // clearAuraReward: () => void // To be removed later - REMOVING NOW
   setJustLeveledUpTo: (level: number | null) => void // New action
   setNewlyUnlockedAchievement: (achievement: Achievement | null) => void // New action
+
+  // Haptics
+  setHapticFeedbackEnabled: (enabled: boolean) => void;
 }
 
 // Import Achievement type for the new state
@@ -244,6 +247,17 @@ export const useAppStore = create<AppState>()(
             if (settingsRes.data?.dark_mode) {
               get().setDarkMode(true)
             }
+
+            // Set haptic feedback enabled based on settings
+            if (settingsRes.data) {
+              set((state) => ({
+                settings: {
+                  ...(state.settings || settingsRes.data), // Ensure settings object exists
+                  haptic_feedback_enabled: settingsRes.data.haptic_feedback_enabled ?? true,
+                },
+              }));
+            }
+
 
             // Check if user needs to set username
             if (userId && settingsRes.data && !settingsRes.data.username) {
@@ -1089,6 +1103,36 @@ export const useAppStore = create<AppState>()(
         // clearAuraReward: () => set({ /* lastAuraReward: null */ }), // REMOVING NOW
         setJustLeveledUpTo: (level) => set({ justLeveledUpTo: level }),
         setNewlyUnlockedAchievement: (achievement) => set({ newlyUnlockedAchievement: achievement }),
+
+        setHapticFeedbackEnabled: async (enabled) => {
+          const { user, settings } = get();
+          // Optimistically update local state
+          set((state) => ({
+            settings: state.settings
+              ? { ...state.settings, haptic_feedback_enabled: enabled }
+              : null, // Or handle default settings object creation
+          }));
+
+          if (user?.id) {
+            try {
+              const { error } = await supabase
+                .from('user_settings')
+                .update({ haptic_feedback_enabled: enabled })
+                .eq('id', user.id);
+              if (error) throw error;
+              // toast.success("Haptic feedback settings updated"); // Optional: if you want a toast
+            } catch (error) {
+              console.error("Error updating haptic feedback setting:", error);
+              // toast.error("Failed to update haptic feedback setting"); // Optional
+              // Revert optimistic update if necessary
+              set((state) => ({
+                settings: state.settings
+                  ? { ...state.settings, haptic_feedback_enabled: settings?.haptic_feedback_enabled ?? true }
+                  : null,
+              }));
+            }
+          }
+        },
       }),
       {
         name: "auratask-store",
