@@ -1,3 +1,10 @@
+// components/theme/NedaBubbleGroup.tsx
+/**
+ * NedaBubbleGroup - Renders a 3D interactive scene of task groups as floating bubbles.
+ * Uses React Three Fiber for 3D rendering and Framer Motion for animations.
+ * Each bubble is an InteractiveBubble component, displaying group emoji, name, task count, and completion progress.
+ * This component is primarily used by TaskGroupsBubbles.tsx to visualize multiple task groups.
+ */
 "use client"
 
 import { useRef, useState, useMemo, useCallback } from "react"
