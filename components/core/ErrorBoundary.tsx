@@ -49,8 +49,8 @@ export class ErrorBoundary extends Component<Props, State> {
           errorInfo: {
             componentStack: errorInfo.componentStack,
           },
-          userAgent: navigator.userAgent,
-          url: window.location.href,
+          ...(typeof navigator !== "undefined" && { userAgent: navigator.userAgent }),
+          ...(typeof window !== "undefined" && { url: window.location.href }),
           timestamp: new Date().toISOString(),
         },
       })
