@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Trophy, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useTheme } from "@/components/theme/theme-provider"
+import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
 
 interface Achievement {

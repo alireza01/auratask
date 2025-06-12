@@ -1,44 +1,38 @@
-import { createClient } from "./supabase-server"
+// lib/get-api-key.ts
+import { supabase } from "./supabase-client"; // Using client-side Supabase
 
 export async function getApiKeyForUser(userId: string): Promise<string | null> {
-  const supabase = createClient()
+  if (!userId) return null;
 
-  try {
-    // First, try to get user's personal API key
-    const { data: userSettings, error: userError } = await supabase
-      .from("user_settings")
-      .select("gemini_api_key")
-      .eq("user_id", userId)
-      .single()
+  const { data: userSettings } = await supabase
+    .from("user_settings")
+    .select("gemini_api_key")
+    .eq("id", userId)
+    .single();
 
-    if (!userError && userSettings?.gemini_api_key) {
-      return userSettings.gemini_api_key
-    }
+  if (userSettings?.gemini_api_key) {
+    return userSettings.gemini_api_key;
+  }
 
-    // Fallback to admin API key pool
-    const { data: adminKeys, error: adminError } = await supabase
-      .from("admin_api_keys")
-      .select("id, api_key")
-      .eq("is_active", true)
-      .order("usage_count", { ascending: true })
-      .limit(1)
+  // If user doesn't have an API key, get one from admin pool
+  const { data: adminKeys } = await supabase
+    .from("admin_api_keys")
+    .select("api_key, id")
+    .eq("is_active", true)
+    .order("usage_count", { ascending: true }) // Optional: pick least used
+    .limit(1);
 
-    if (adminError || !adminKeys || adminKeys.length === 0) {
-      console.error("No API keys available:", adminError)
-      return null
-    }
-
-    const selectedKey = adminKeys[0]
-
-    // Increment usage count
-    await supabase
+  if (adminKeys && adminKeys.length > 0) {
+    const adminKey = adminKeys[0];
+    // Update usage count (fire and forget)
+    supabase
       .from("admin_api_keys")
       .update({ usage_count: supabase.sql`usage_count + 1` })
-      .eq("id", selectedKey.id)
-
-    return selectedKey.api_key
-  } catch (error) {
-    console.error("Error getting API key:", error)
-    return null
+      .eq("id", adminKey.id)
+      .then(({ error }) => {
+        if (error) console.error("Error updating admin key usage:", error);
+      });
+    return adminKey.api_key;
   }
+  return null;
 }

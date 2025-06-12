@@ -8,13 +8,16 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 // SettingsPanel is rendered by TaskDashboard based on store state, so not directly controlled here.
 // import { SettingsPanel } from "@/components/settings/SettingsPanel"
-import { Settings, Sparkles, Flame, PlusCircle, Sun, Moon } from "lucide-react"
+import Link from "next/link";
+import { Settings, Sparkles, Flame, PlusCircle, Sun, Moon, Trophy, Shield, LogOut } from "lucide-react"; // Add Trophy, Shield, LogOut
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu"; // Add DropdownMenu components and Label
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 // Removed: import { useState } from "react"
 // Removed: import { useTheme } from "@/components/theme/theme-provider"
 import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar" // For user avatar
 import { toast } from "sonner" // For Aura reward notifications
+import { supabase } from "@/lib/supabase-client"; // Ensure this is correctly imported
 
 export function Header() {
   const t = useTranslations()
@@ -71,6 +74,13 @@ export function Header() {
   const userDisplayName = settings?.username || user?.email || "Guest"
   const userAvatarUrl = user?.avatar_url || '/placeholder-user.jpg' // Placeholder if no avatar
 
+  const isAdmin = settings?.username === 'admin';
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    // router.push('/') // The issue description notes this might not be needed if Supabase listener handles it. Let's stick to the provided code.
+  };
+
   return (
     <header
       className={cn(
@@ -123,51 +133,43 @@ export function Header() {
             {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </Button>
 
-          <div className="flex items-center gap-2 cursor-pointer" onClick={toggleSettingsPanel} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && toggleSettingsPanel()}>
-            <div className="hidden sm:flex flex-col text-right">
-              <p className={cn("text-sm font-medium truncate max-w-[100px]", appTheme === "alireza" && "text-yellow-400")}>
-                {userDisplayName}
-              </p>
-              <div className="flex items-center justify-end gap-2">
-                {settings?.current_streak != null && settings.current_streak > 0 && (
-                  <Badge
-                    variant="secondary"
-                    className={cn(
-                      "text-xs px-1.5 py-0.5",
-                      appTheme === "alireza" && "bg-yellow-400/20 text-yellow-400 border-yellow-400/30",
-                    )}
-                  >
-                    {getStreakIcon()} {settings.current_streak} {t("days")}
-                  </Badge>
-                )}
-                 {settings?.level != null && (
-                    <Badge variant="outline" className="text-xs px-1.5 py-0.5">
-                      Level {settings.level}
-                    </Badge>
-                 )}
-              </div>
-            </div>
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={userAvatarUrl} alt={userDisplayName} />
-              <AvatarFallback>{userDisplayName?.charAt(0).toUpperCase()}</AvatarFallback>
-            </Avatar>
-          </div>
-
-          {/* Explicit Settings button for mobile or if combined user display is too small */}
-           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="sm:hidden">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleSettingsPanel}
-              className={cn(
-                "transition-all duration-200",
-                appTheme === "alireza" && "hover:bg-yellow-400/20 hover:text-yellow-400",
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={userAvatarUrl} alt={userDisplayName} />
+                  <AvatarFallback>{userDisplayName?.charAt(0).toUpperCase()}</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>{userDisplayName}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/leaderboard">
+                  <Trophy className="mr-2 h-4 w-4" />
+                  <span>Leaderboard</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => toggleSettingsPanel(true)}>
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </DropdownMenuItem>
+              {isAdmin && (
+                <DropdownMenuItem asChild>
+                  <Link href="/admin">
+                    <Shield className="mr-2 h-4 w-4" />
+                    <span>Admin Panel</span>
+                  </Link>
+                </DropdownMenuItem>
               )}
-              aria-label="Open settings"
-            >
-              <Settings className="w-4 h-4" />
-            </Button>
-          </motion.div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Sign Out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </motion.div>
       </div>
       {/* SettingsPanel is no longer rendered here directly. Its visibility is controlled by isSettingsPanelOpen in the store,
