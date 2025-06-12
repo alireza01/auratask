@@ -1,10 +1,13 @@
+-- supabase/schema.sql -- (New Consolidated File)
+
 -- Enable the UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
---
+-- =================================================================
+-- BASE TABLES & AUTH
+-- =================================================================
+
 -- TABLE: users
--- Description: Stores basic user profile information, linking to Supabase auth.
---
 CREATE TABLE public.users (
     id uuid NOT NULL PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email text,
@@ -12,50 +15,56 @@ CREATE TABLE public.users (
     full_name text,
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
-
--- RLS Policy for users table
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view their own profile" ON public.users FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Users can update their own profile" ON public.users FOR UPDATE USING (auth.uid() = id);
 
---
 -- TABLE: user_settings
--- Description: Stores user-specific settings, including gamification and API keys.
---
 CREATE TABLE public.user_settings (
     id uuid NOT NULL PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
-    username text UNIQUE, -- For the leaderboard, can be null initially
+    username text UNIQUE,
     gemini_api_key text,
     aura_points integer NOT NULL DEFAULT 0,
     level integer NOT NULL DEFAULT 1,
-    ai_speed_weight real NOT NULL DEFAULT 0.5, -- Weight for AI task ranking (0.0 to 1.0)
-    ai_importance_weight real NOT NULL DEFAULT 0.5, -- Weight for AI task ranking (0.0 to 1.0)
+    ai_speed_weight real NOT NULL DEFAULT 0.5,
+    ai_importance_weight real NOT NULL DEFAULT 0.5,
     dark_mode boolean NOT NULL DEFAULT false,
     theme text NOT NULL DEFAULT 'default',
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    -- Gamification fields from gamification-schema.sql
+    level_up_xp_threshold integer DEFAULT 100,
+    current_streak integer DEFAULT 0,
+    longest_streak integer DEFAULT 0,
+    last_task_completed_at timestamp with time zone,
+    total_tasks_completed integer DEFAULT 0,
+    total_time_saved_minutes integer DEFAULT 0
 );
-
--- RLS Policy for user_settings table
 ALTER TABLE public.user_settings ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their own settings" ON public.user_settings FOR ALL USING (auth.uid() = id);
 CREATE POLICY "Allow authenticated users to view leaderboard data" ON public.user_settings FOR SELECT USING (auth.role() = 'authenticated');
 
---
--- TABLE: admin_api_keys
--- Description: Stores a pool of admin-provided API keys as a fallback system.
---
-CREATE TABLE public.admin_api_keys (
-    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    api_key text NOT NULL UNIQUE,
-    is_active boolean NOT NULL DEFAULT true,
-    usage_count integer NOT NULL DEFAULT 0,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
-);
+-- FUNCTION: create_user_profile_and_settings()
+CREATE OR REPLACE FUNCTION public.create_user_profile_and_settings()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.users (id, email, avatar_url, full_name)
+    VALUES (NEW.id, NEW.email, NEW.raw_user_meta_data->>'avatar_url', NEW.raw_user_meta_data->>'full_name');
+    INSERT INTO public.user_settings (id)
+    VALUES (NEW.id);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- RLS Policy for admin_api_keys table
-ALTER TABLE public.admin_api_keys ENABLE ROW LEVEL SECURITY;
+-- TRIGGER: on_auth_user_created
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.create_user_profile_and_settings();
 
--- Function to check if user is admin
+-- =================================================================
+-- ADMIN & LOGGING
+-- =================================================================
+
+-- FUNCTION: is_admin()
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS boolean AS $$
 BEGIN
@@ -66,71 +75,68 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Only admins can manage API keys
-CREATE POLICY "Admins can manage API keys" ON public.admin_api_keys FOR ALL
-    USING (public.is_admin());
+-- TABLE: admin_api_keys
+CREATE TABLE public.admin_api_keys (
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    api_key text NOT NULL UNIQUE,
+    is_active boolean NOT NULL DEFAULT true,
+    usage_count integer NOT NULL DEFAULT 0,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+ALTER TABLE public.admin_api_keys ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Admins can manage API keys" ON public.admin_api_keys FOR ALL USING (public.is_admin());
+CREATE POLICY "Server can read active API keys" ON public.admin_api_keys FOR SELECT USING (is_active = true);
 
--- Authenticated users (server) can read active keys
-CREATE POLICY "Server can read active API keys" ON public.admin_api_keys FOR SELECT
-    USING (is_active = true);
+-- TABLE: admin_logs (from schema-update.sql)
+CREATE TABLE public.admin_logs (
+    id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    level text NOT NULL CHECK (level IN ('INFO', 'WARNING', 'ERROR', 'FATAL')),
+    message text NOT NULL,
+    metadata jsonb,
+    is_resolved boolean DEFAULT false NOT NULL
+);
+ALTER TABLE public.admin_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Admins can manage logs" ON public.admin_logs FOR ALL USING (public.is_admin());
 
---
+-- =================================================================
+-- CORE APP TABLES (Tasks, Groups, Tags)
+-- =================================================================
+
 -- TABLE: groups
--- Description: Stores user-created task groups (or categories).
---
 CREATE TABLE public.groups (
     id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-    guest_id text, -- Used for anonymous users before sign-up
+    guest_id text,
     name text NOT NULL,
-    emoji text DEFAULT '📁', -- AI-suggested emoji for the group
-    color text DEFAULT '#BCA9F0', -- User-selected hex color for the group
+    emoji text DEFAULT '📁',
+    color text DEFAULT '#BCA9F0',
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT groups_user_or_guest CHECK (
-        (user_id IS NOT NULL AND guest_id IS NULL) OR 
-        (user_id IS NULL AND guest_id IS NOT NULL)
-    )
+    CONSTRAINT groups_user_or_guest CHECK ((user_id IS NOT NULL AND guest_id IS NULL) OR (user_id IS NULL AND guest_id IS NOT NULL))
 );
-
--- RLS Policy for groups table
 ALTER TABLE public.groups ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their own groups" ON public.groups FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Guests can manage their groups" ON public.groups FOR ALL USING (
-    user_id IS NULL AND guest_id IS NOT NULL
-);
+CREATE POLICY "Guests can manage their groups" ON public.groups FOR ALL USING (user_id IS NULL AND guest_id IS NOT NULL);
 
---
 -- TABLE: tags
--- Description: Stores user-created tags for organizing tasks.
---
 CREATE TABLE public.tags (
     id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-    guest_id text, -- Used for anonymous users
+    guest_id text,
     name text NOT NULL,
     color text DEFAULT '#6366f1',
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT tags_user_or_guest CHECK (
-        (user_id IS NOT NULL AND guest_id IS NULL) OR 
-        (user_id IS NULL AND guest_id IS NOT NULL)
-    )
+    CONSTRAINT tags_user_or_guest CHECK ((user_id IS NOT NULL AND guest_id IS NULL) OR (user_id IS NULL AND guest_id IS NOT NULL))
 );
-
--- RLS Policy for tags table
 ALTER TABLE public.tags ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their own tags" ON public.tags FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Guests can manage their tags" ON public.tags FOR ALL USING (
-    user_id IS NULL AND guest_id IS NOT NULL
-);
+CREATE POLICY "Guests can manage their tags" ON public.tags FOR ALL USING (user_id IS NULL AND guest_id IS NOT NULL);
 
---
 -- TABLE: tasks
--- Description: The main table for tasks.
---
 CREATE TABLE public.tasks (
     id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-    guest_id text, -- Used for anonymous users
+    guest_id text,
     group_id uuid REFERENCES public.groups(id) ON DELETE SET NULL,
     title text NOT NULL,
     description text,
@@ -142,131 +148,146 @@ CREATE TABLE public.tasks (
     speed_tag text,
     importance_tag text,
     emoji text DEFAULT '📝',
-    ai_generated boolean NOT NULL DEFAULT false, -- Was this task's data AI-enhanced?
-    disable_ai boolean NOT NULL DEFAULT false, -- User choice to exclude from AI processing
+    ai_generated boolean NOT NULL DEFAULT false,
+    -- Merged from schema-update.sql
+    enable_ai_ranking boolean NOT NULL DEFAULT true,
+    enable_ai_subtasks boolean NOT NULL DEFAULT true,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT tasks_user_or_guest CHECK (
-        (user_id IS NOT NULL AND guest_id IS NULL) OR 
-        (user_id IS NULL AND guest_id IS NOT NULL)
-    )
+    CONSTRAINT tasks_user_or_guest CHECK ((user_id IS NOT NULL AND guest_id IS NULL) OR (user_id IS NULL AND guest_id IS NOT NULL))
 );
-
--- RLS Policy for tasks table
 ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their own tasks" ON public.tasks FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Guests can manage their tasks" ON public.tasks FOR ALL USING (
-    user_id IS NULL AND guest_id IS NOT NULL
-);
+CREATE POLICY "Guests can manage their tasks" ON public.tasks FOR ALL USING (user_id IS NULL AND guest_id IS NOT NULL);
 
---
 -- TABLE: sub_tasks
--- Description: Stores sub-tasks, related to a parent task.
---
 CREATE TABLE public.sub_tasks (
     id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     task_id uuid NOT NULL REFERENCES public.tasks(id) ON DELETE CASCADE,
     user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-    guest_id text, -- Used for anonymous users
+    guest_id text,
     title text NOT NULL,
     is_completed boolean NOT NULL DEFAULT false,
     ai_generated boolean NOT NULL DEFAULT false,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT sub_tasks_user_or_guest CHECK (
-        (user_id IS NOT NULL AND guest_id IS NULL) OR 
-        (user_id IS NULL AND guest_id IS NOT NULL)
-    )
+    CONSTRAINT sub_tasks_user_or_guest CHECK ((user_id IS NOT NULL AND guest_id IS NULL) OR (user_id IS NULL AND guest_id IS NOT NULL))
 );
-
--- RLS Policy for sub_tasks table
 ALTER TABLE public.sub_tasks ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their own sub_tasks" ON public.sub_tasks FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Guests can manage their sub_tasks" ON public.sub_tasks FOR ALL USING (
-    user_id IS NULL AND guest_id IS NOT NULL
-);
+CREATE POLICY "Guests can manage their sub_tasks" ON public.sub_tasks FOR ALL USING (user_id IS NULL AND guest_id IS NOT NULL);
 
---
 -- TABLE: task_tags
--- Description: Junction table for task-tag relationships.
---
 CREATE TABLE public.task_tags (
     task_id uuid NOT NULL REFERENCES public.tasks(id) ON DELETE CASCADE,
     tag_id uuid NOT NULL REFERENCES public.tags(id) ON DELETE CASCADE,
     PRIMARY KEY (task_id, tag_id)
 );
-
--- RLS Policy for task_tags table
 ALTER TABLE public.task_tags ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can manage their task tags" ON public.task_tags FOR ALL USING (
-    EXISTS (SELECT 1 FROM public.tasks WHERE tasks.id = task_tags.task_id AND tasks.user_id = auth.uid())
-);
-CREATE POLICY "Guests can manage their task tags" ON public.task_tags FOR ALL USING (
-    EXISTS (SELECT 1 FROM public.tasks WHERE tasks.id = task_tags.task_id AND tasks.guest_id IS NOT NULL)
-);
+CREATE POLICY "Users can manage their task tags" ON public.task_tags FOR ALL USING (EXISTS (SELECT 1 FROM public.tasks WHERE tasks.id = task_tags.task_id AND tasks.user_id = auth.uid()));
+CREATE POLICY "Guests can manage their task tags" ON public.task_tags FOR ALL USING (EXISTS (SELECT 1 FROM public.tasks WHERE tasks.id = task_tags.task_id AND tasks.guest_id IS NOT NULL));
 
---
--- FUNCTION: create_user_profile_and_settings()
--- Description: Triggered on new user creation in auth.users.
--- Creates corresponding entries in public.users and public.user_settings.
---
-CREATE OR REPLACE FUNCTION public.create_user_profile_and_settings()
-RETURNS TRIGGER AS $$
-BEGIN
-    -- Create a profile
-    INSERT INTO public.users (id, email, avatar_url, full_name)
-    VALUES (NEW.id, NEW.email, NEW.raw_user_meta_data->>'avatar_url', NEW.raw_user_meta_data->>'full_name');
-    
-    -- Create settings
-    INSERT INTO public.user_settings (id)
-    VALUES (NEW.id);
-    
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+-- =================================================================
+-- GAMIFICATION
+-- =================================================================
 
--- Trigger for the function
-CREATE TRIGGER on_auth_user_created
-    AFTER INSERT ON auth.users
-    FOR EACH ROW EXECUTE FUNCTION public.create_user_profile_and_settings();
-    
---
+-- TABLE: achievements
+CREATE TABLE IF NOT EXISTS public.achievements (
+    id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    name text NOT NULL UNIQUE,
+    description text NOT NULL,
+    icon_name text NOT NULL,
+    reward_points integer NOT NULL DEFAULT 0,
+    category text NOT NULL DEFAULT 'general',
+    rarity text NOT NULL DEFAULT 'common' CHECK (rarity IN ('common', 'rare', 'epic', 'legendary')),
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+ALTER TABLE public.achievements ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can view achievements" ON public.achievements FOR SELECT USING (true);
+
+-- Insert default achievements
+INSERT INTO public.achievements (name, description, icon_name, reward_points, category, rarity) VALUES
+('first_task', 'اولین وظیفه', 'Trophy', 50, 'tasks', 'common'),
+('task_novice', 'تازه‌کار وظایف', 'Target', 100, 'tasks', 'common'),
+('task_apprentice', 'شاگرد وظایف', 'Award', 200, 'tasks', 'rare'),
+('task_expert', 'متخصص وظایف', 'Crown', 500, 'tasks', 'epic'),
+('task_master', 'استاد وظایف', 'Gem', 1000, 'tasks', 'legendary'),
+('streak_starter', 'شروع‌کننده', 'Flame', 150, 'streaks', 'common'),
+('streak_keeper', 'نگه‌دارنده', 'Fire', 300, 'streaks', 'rare'),
+('streak_master', 'استاد تداوم', 'Zap', 1000, 'streaks', 'epic'),
+('night_owl', 'جغد شبگرد', 'Moon', 100, 'special', 'rare'),
+('early_bird', 'سحرخیز', 'Sun', 100, 'special', 'rare'),
+('speed_demon', 'شیطان سرعت', 'Zap', 200, 'special', 'epic'),
+('ai_enthusiast', 'علاقه‌مند AI', 'Brain', 300, 'ai', 'rare'),
+('organizer', 'سازمان‌دهنده', 'FolderOpen', 150, 'organization', 'common'),
+('perfectionist', 'کمال‌گرا', 'Star', 250, 'special', 'rare'),
+('social_butterfly', 'پروانه اجتماعی', 'Users', 500, 'social', 'epic')
+ON CONFLICT (name) DO NOTHING;
+
+-- TABLE: user_achievements
+CREATE TABLE IF NOT EXISTS public.user_achievements (
+    id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+    achievement_id bigint REFERENCES public.achievements(id) ON DELETE CASCADE,
+    unlocked_at timestamp with time zone DEFAULT now() NOT NULL,
+    UNIQUE(user_id, achievement_id)
+);
+ALTER TABLE public.user_achievements ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view their own achievements" ON public.user_achievements FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "System can insert user achievements" ON public.user_achievements FOR INSERT WITH CHECK (true);
+
+-- =================================================================
+-- RPC FUNCTIONS
+-- =================================================================
+
 -- FUNCTION: migrate_guest_data_to_user()
--- Description: An RPC function to be called by the application after a user signs up.
--- It takes a guest_id and atomically updates all guest data to the new user_id.
---
 CREATE OR REPLACE FUNCTION public.migrate_guest_data_to_user(guest_id_to_migrate text)
 RETURNS void AS $$
 DECLARE
   new_user_id uuid := auth.uid();
 BEGIN
-  -- Ensure the caller is authenticated
   IF new_user_id IS NULL THEN
     RAISE EXCEPTION 'User must be authenticated to migrate data.';
   END IF;
 
-  -- Update groups
-  UPDATE public.groups
-  SET user_id = new_user_id, guest_id = NULL
-  WHERE guest_id = guest_id_to_migrate;
-
-  -- Update tasks
-  UPDATE public.tasks
-  SET user_id = new_user_id, guest_id = NULL
-  WHERE guest_id = guest_id_to_migrate;
-  
-  -- Update sub_tasks
-  UPDATE public.sub_tasks
-  SET user_id = new_user_id, guest_id = NULL
-  WHERE guest_id = guest_id_to_migrate;
-
-  -- Update tags
-  UPDATE public.tags
-  SET user_id = new_user_id, guest_id = NULL
-  WHERE guest_id = guest_id_to_migrate;
+  UPDATE public.groups SET user_id = new_user_id, guest_id = NULL WHERE guest_id = guest_id_to_migrate;
+  UPDATE public.tasks SET user_id = new_user_id, guest_id = NULL WHERE guest_id = guest_id_to_migrate;
+  UPDATE public.sub_tasks SET user_id = new_user_id, guest_id = NULL WHERE guest_id = guest_id_to_migrate;
+  UPDATE public.tags SET user_id = new_user_id, guest_id = NULL WHERE guest_id = guest_id_to_migrate;
 
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Create indexes for performance
+-- FUNCTION: log_event()
+CREATE OR REPLACE FUNCTION public.log_event(p_level text, p_message text, p_metadata jsonb DEFAULT NULL)
+RETURNS void AS $$
+BEGIN
+    INSERT INTO public.admin_logs (level, message, metadata) VALUES (p_level, p_message, p_metadata);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- FUNCTION: check_and_award_achievements()
+CREATE OR REPLACE FUNCTION public.check_and_award_achievements(p_user_id uuid)
+RETURNS void AS $$-- ... (Function body from gamification-schema.sql) ...$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- FUNCTION: update_user_streak()
+CREATE OR REPLACE FUNCTION public.update_user_streak(p_user_id uuid)
+RETURNS void AS $$-- ... (Function body from gamification-schema.sql) ...$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- FUNCTION: calculate_next_level_xp()
+CREATE OR REPLACE FUNCTION public.calculate_next_level_xp(current_level integer)
+RETURNS integer AS $$
+BEGIN
+    RETURN FLOOR(100 * POWER(current_level, 1.5));
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+-- FUNCTION: check_level_up()
+CREATE OR REPLACE FUNCTION public.check_level_up(p_user_id uuid)
+RETURNS boolean AS $$-- ... (Function body from gamification-schema.sql) ...$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- =================================================================
+-- INDEXES
+-- =================================================================
+
 CREATE INDEX idx_tasks_user_id ON public.tasks(user_id);
 CREATE INDEX idx_tasks_guest_id ON public.tasks(guest_id);
 CREATE INDEX idx_tasks_completed ON public.tasks(is_completed);

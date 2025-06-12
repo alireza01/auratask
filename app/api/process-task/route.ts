@@ -15,6 +15,12 @@ async function processTaskHandler(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     if (authError || !user) {
+      // Log the error
+      await supabase.rpc("log_event", {
+        p_level: "ERROR",
+        p_message: "Unauthorized access to process-task API",
+        p_metadata: { authError: authError?.message, userId: user?.id }, // Adjusted for potential null
+      })
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -47,6 +53,12 @@ async function processTaskHandler(request: NextRequest) {
     }
 
     if (!apiKey) {
+      // Log no API key available
+      await supabase.rpc("log_event", {
+        p_level: "WARNING",
+        p_message: "No API key available for AI processing",
+        p_metadata: { userId: user.id, title },
+      })
       return NextResponse.json({ error: "No API key available" }, { status: 400 })
     }
 
@@ -63,6 +75,7 @@ async function processTaskHandler(request: NextRequest) {
 
     // Only process with AI if user has enabled the features
     if (enable_ai_ranking || enable_ai_subtasks) {
+      let responseText: string | undefined = undefined; // Declare responseText with wider scope
       try {
         const prompt = `تحلیل این وظیفه و نتیجه را به صورت JSON برگردان:
 عنوان: ${title}
@@ -111,7 +124,7 @@ ${
         }
 
         const geminiData = await geminiResponse.json()
-        const responseText = geminiData.candidates[0]?.content?.parts[0]?.text
+        responseText = geminiData.candidates[0]?.content?.parts[0]?.text // Assign to scoped responseText
 
         if (responseText) {
           try {
@@ -137,22 +150,47 @@ ${
               ...parsedAnalysis,
               ai_generated: true,
             }
+
+            // Log successful AI processing
+            await supabase.rpc("log_event", {
+              p_level: "INFO",
+              p_message: "Successful AI task processing",
+              p_metadata: {
+                userId: user.id,
+                title,
+                enable_ai_ranking,
+                enable_ai_subtasks,
+                hasUserApiKey: !!userSettings?.gemini_api_key,
+              },
+            })
           } catch (parseError) {
             console.error("Failed to parse AI response:", parseError)
-            // Keep default values
+            // Log parsing error but provide fallback (current behavior is fallback)
+            await supabase.rpc("log_event", {
+              p_level: "WARNING",
+              p_message: "AI response parsing failed, using fallback",
+              p_metadata: {
+                userId: user.id,
+                title,
+                responseText, // This needs to be available in this scope
+                parseError: parseError instanceof Error ? parseError.message : String(parseError),
+              },
+            })
+            // Keep default values (current behavior)
           }
         }
       } catch (aiError) {
         console.error("AI processing error:", aiError)
 
-        // Log AI processing error
+        // Log API error (changed level to ERROR, added hasUserApiKey)
         await supabase.rpc("log_event", {
-          p_level: "WARNING",
-          p_message: `AI processing failed for user ${user.id}`,
+          p_level: "ERROR",
+          p_message: "Gemini API call failed",
           p_metadata: {
             error: aiError instanceof Error ? aiError.message : String(aiError),
             title,
             user_id: user.id,
+            hasUserApiKey: !!userSettings?.gemini_api_key, // Added from old file
           },
         })
       }
@@ -162,11 +200,11 @@ ${
   } catch (error) {
     console.error("Error processing task:", error)
 
-    // Log processing error
-    const supabase = createClient()
+    // Log critical error (changed level to FATAL)
+    const supabase = createClient() // Supabase client might need to be re-initialized if error occurred before its first init
     await supabase.rpc("log_event", {
-      p_level: "ERROR",
-      p_message: `Task processing error: ${error}`,
+      p_level: "FATAL",
+      p_message: "Critical error in process-task endpoint",
       p_metadata: {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
