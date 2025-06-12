@@ -11,13 +11,13 @@ const nextConfig = {
     }
   },
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
   typescript: {
     ignoreBuildErrors: false,
   },
   images: {
-    unoptimized: true,
+    unoptimized: false,
   },
 }
 
