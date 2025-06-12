@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useTranslations } from "next-intl"
-import { createClient } from "@/lib/supabase-client"
+import { createClient as getSupabaseClient } from "@/lib/supabase-client" // Changed import alias for clarity
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -47,7 +47,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const t = useTranslations("admin")
 
-  const supabase = createClient()
+  const supabase = getSupabaseClient() // Correctly get the client instance
 
   useEffect(() => {
     fetchAdminData()
