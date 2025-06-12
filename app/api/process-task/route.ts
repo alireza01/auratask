@@ -191,8 +191,8 @@ ${
 `
 }
 
-// // فقط و فقط یک آبجکت JSON معتبر برگردان و از هیچگونه متن اضافی یا ```json استفاده نکن.
-// Removed backtick at line 195
+// // فقط و فقط یک آبجکت JSON معتبر برگردان و از هیچگونه متن اضافی یا \`\`\`json استفاده نکن.
+`;
 
         const geminiResponse = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
