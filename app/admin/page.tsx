@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase-client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+// Table related imports are removed as the table is deleted.
+// import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { AdminApiKeyForm } from "@/components/admin/AdminApiKeyForm"
@@ -29,12 +30,21 @@ interface LogEntry {
   is_resolved: boolean
 }
 
+// Interface for API keys as fetched from Supabase
+interface ApiKeyClient {
+  id: string
+  api_key: string // from DB
+  is_active: boolean // from DB
+  created_at: string
+  usage_count?: number
+}
+
 export default function AdminPage() {
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [userGrowth, setUserGrowth] = useState([])
   const [taskStats, setTaskStats] = useState([])
   const [logs, setLogs] = useState<LogEntry[]>([])
-  const [apiKeys, setApiKeys] = useState([])
+  const [apiKeys, setApiKeys] = useState<ApiKeyClient[]>([])
   const [loading, setLoading] = useState(true)
 
   const supabase = createClient()
@@ -288,60 +298,18 @@ export default function AdminPage() {
               <CardDescription>مدیریت کلیدهای API جمینی برای پشتیبانی از کاربران</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <AdminApiKeyForm onSuccess={fetchAdminData} />
-
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>کلید API (پوشیده)</TableHead>
-                    <TableHead>وضعیت</TableHead>
-                    <TableHead>تعداد استفاده</TableHead>
-                    <TableHead>تاریخ ایجاد</TableHead>
-                    <TableHead>عملیات</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {apiKeys.map((key) => (
-                    <TableRow key={key.id}>
-                      <TableCell className="font-mono">****{key.api_key.slice(-4)}</TableCell>
-                      <TableCell>
-                        <Badge variant={key.is_active ? "default" : "secondary"}>
-                          {key.is_active ? "فعال" : "غیرفعال"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{key.usage_count}</TableCell>
-                      <TableCell>{new Date(key.created_at).toLocaleDateString("fa-IR")}</TableCell>
-                      <TableCell className="space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            // Toggle API key status
-                            fetch(`/api/admin/toggle-api-key?id=${key.id}`, { method: "POST" }).then(() =>
-                              fetchAdminData(),
-                            )
-                          }}
-                        >
-                          {key.is_active ? "غیرفعال" : "فعال"}
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => {
-                            if (confirm("آیا مطمئن هستید؟")) {
-                              fetch(`/api/admin/delete-api-key?id=${key.id}`, { method: "POST" }).then(() =>
-                                fetchAdminData(),
-                              )
-                            }
-                          }}
-                        >
-                          حذف
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <AdminApiKeyForm
+                apiKeys={apiKeys.map((ak) => ({
+                  id: ak.id,
+                  key: ak.api_key, // Map api_key to key
+                  active: ak.is_active, // Map is_active to active
+                  created_at: ak.created_at,
+                  usage_count: ak.usage_count,
+                }))}
+                onSuccess={fetchAdminData}
+              />
+              {/* The Table element for displaying API keys has been removed. */}
+              {/* AdminApiKeyForm now handles the display and management internally. */}
             </CardContent>
           </Card>
         </TabsContent>

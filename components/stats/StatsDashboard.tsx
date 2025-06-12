@@ -1,205 +1,125 @@
 "use client"
+import { useMemo } from "react"
+import { useAppStore } from "@/lib/store"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import { Clock, Star } from "lucide-react"
+import { useTranslations } from "next-intl"
 
-import { useState } from "react"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
-import { Calendar, Clock, Users } from "lucide-react"
+export function StatsDashboard() {
+  const t = useTranslations("stats")
+  const tasks = useAppStore((state) => state.tasks)
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+  const stats = useMemo(() => {
+    const totalTasks = tasks.length
+    const completedTasks = tasks.filter((t) => t.is_completed).length // Changed from t.completed
+    const activeTasks = totalTasks - completedTasks
+    const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0
 
-interface StatsProps {
-  totalUsers: number
-  totalTasks: number
-  completedTasks: number
-  tasksByDay: {
-    day: string
-    count: number
-  }[]
-  tasksByCategory: {
-    name: string
-    count: number
-  }[]
-  averageCompletionTime: number
-  userGrowth: {
-    date: string
-    count: number
-  }[]
-}
+    // Calculate overdue tasks
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
 
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8", "#82ca9d", "#ffc658", "#8dd1e1"]
+    const overdueTasks = tasks.filter((t) => {
+      if (t.is_completed || !t.due_date) return false // Changed from t.completed
+      const dueDate = new Date(t.due_date)
+      return dueDate < today
+    }).length
 
-function StatsDashboard({
-  totalUsers,
-  totalTasks,
-  completedTasks,
-  tasksByDay,
-  tasksByCategory,
-  averageCompletionTime,
-  userGrowth,
-}: StatsProps) {
-  const [activeTab, setActiveTab] = useState("overview")
+    // Calculate due today
+    const dueTodayTasks = tasks.filter((t) => {
+      if (t.is_completed || !t.due_date) return false // Changed from t.completed
+      const dueDate = new Date(t.due_date)
+      return dueDate.toDateString() === today.toDateString()
+    }).length
 
-  const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+    // High priority tasks
+    const highPriorityTasks = tasks.filter((t) => !t.is_completed && (t.ai_importance_score || 0) >= 16).length // Changed from t.importance_score
+
+    return {
+      totalTasks,
+      completedTasks,
+      activeTasks,
+      completionRate,
+      overdueTasks,
+      dueTodayTasks,
+      highPriorityTasks,
+    }
+  }, [tasks])
 
   return (
     <div className="space-y-4">
-      <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="tasks">Tasks</TabsTrigger>
-          <TabsTrigger value="users">Users</TabsTrigger>
-        </TabsList>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("statistics")}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Stat Cards */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Total Tasks */}
+            <div className="flex flex-col">
+              <p className="text-muted-foreground text-sm">{t("totalTasks")}</p>
+              <p className="text-2xl font-bold">{stats.totalTasks}</p>
+            </div>
 
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{totalUsers}</div>
-                <p className="text-xs text-muted-foreground">
-                  +{userGrowth[userGrowth.length - 1]?.count || 0} in the last day
-                </p>
-              </CardContent>
-            </Card>
+            {/* Completed Tasks */}
+            <div className="flex flex-col">
+              <p className="text-muted-foreground text-sm">{t("completedTasks")}</p>
+              <p className="text-2xl font-bold">{stats.completedTasks}</p>
+            </div>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Task Completion</CardTitle>
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{completionRate}%</div>
-                <p className="text-xs text-muted-foreground">
-                  {completedTasks} of {totalTasks} tasks completed
-                </p>
-              </CardContent>
-            </Card>
+            {/* Pending Tasks */}
+            <div className="flex flex-col">
+              <p className="text-muted-foreground text-sm">{t("pendingTasks")}</p>
+              <p className="text-2xl font-bold">{stats.activeTasks}</p>
+            </div>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Avg. Completion Time</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{averageCompletionTime} min</div>
-                <p className="text-xs text-muted-foreground">Average time to complete tasks</p>
-              </CardContent>
-            </Card>
+            {/* Overdue Tasks */}
+            <div className="flex flex-col">
+              <p className="text-muted-foreground text-sm">{t("overdueTasks")}</p>
+              <p className="text-2xl font-bold text-destructive">{stats.overdueTasks}</p>
+            </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Tasks by Day</CardTitle>
-                <CardDescription>Number of tasks created per day over the last week</CardDescription>
-              </CardHeader>
-              <CardContent className="pt-2">
-                <ChartContainer
-                  config={{
-                    count: {
-                      label: "Tasks",
-                      color: "hsl(var(--chart-1))",
-                    },
-                  }}
-                  className="h-[300px]"
-                >
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={tasksByDay}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="day" />
-                      <YAxis />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="count" fill="var(--color-count)" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Tasks by Category</CardTitle>
-                <CardDescription>Distribution of tasks across categories</CardDescription>
-              </CardHeader>
-              <CardContent className="pt-2">
-                <div className="h-[300px] flex items-center justify-center">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={tasksByCategory}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="count"
-                        nameKey="name"
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      >
-                        {tasksByCategory.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Completion Rate */}
+          <div>
+            <div className="flex justify-between text-sm mb-1">
+              <span>{t("completionRate")}</span>
+              <span>{Math.round(stats.completionRate)}%</span>
+            </div>
+            <Progress value={stats.completionRate} className="h-2" />
           </div>
-        </TabsContent>
 
-        <TabsContent value="tasks" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Task Completion Trends</CardTitle>
-              <CardDescription>Weekly task completion rates over time</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-2">
-              <div className="h-[400px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={tasksByDay}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="day" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#8884d8" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+          {/* Today's Progress */}
+          <div>
+            <div className="flex justify-between text-sm mb-1">
+              <span>{t("todayProgress")}</span>
+              <span>{stats.dueTodayTasks > 0 ? `${stats.dueTodayTasks} ${t("dueToday")}` : "-"}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-muted-foreground" />
+              <div className="flex-1 flex items-center gap-1">
+                {Array.from({ length: Math.min(stats.dueTodayTasks, 5) }).map((_, i) => (
+                  <div key={i} className="h-2 flex-1 bg-primary rounded-full" />
+                ))}
+                {Array.from({ length: Math.max(5 - stats.dueTodayTasks, 0) }).map((_, i) => (
+                  <div key={i} className="h-2 flex-1 bg-muted rounded-full" />
+                ))}
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </div>
+          </div>
 
-        <TabsContent value="users" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>User Growth</CardTitle>
-              <CardDescription>New user registrations over time</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-2">
-              <div className="h-[400px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={userGrowth}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#82ca9d" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+          {/* High Priority */}
+          {stats.highPriorityTasks > 0 && (
+            <div className="flex items-center gap-2 text-amber-500">
+              <Star className="w-4 h-4" />
+              <span className="text-sm">
+                {stats.highPriorityTasks} {t("importanceTags.high")}
+              </span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }
-
-// Export the component as a named export
-export { StatsDashboard }

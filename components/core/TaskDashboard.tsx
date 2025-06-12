@@ -1,43 +1,47 @@
 "use client"
 
-import React from "react"
+import { useMemo } from "react" // Changed from import React
 import { DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core"
 import { arrayMove } from "@dnd-kit/sortable"
 import { useAppStore } from "@/lib/store"
+import { useTheme } from "@/components/theme/ThemeProvider"; // Added useTheme
 
-// Import child components
-import { Header } from "./Header"
-import { TaskGroupsBubbles } from "@/components/groups/TaskGroupsBubbles"
-import { TaskList } from "@/components/tasks/TaskList"
-import { StatsDashboard } from "@/components/stats/StatsDashboard"
-import { TaskTabs } from "@/components/tasks/TaskTabs"
-import { TaskFilters } from "@/components/tasks/TaskFilters"
-import { TaskFormModal } from "@/components/forms/TaskFormModal"
-import { GroupFormModal } from "@/components/forms/GroupFormModal"
-import { SettingsPanel } from "@/components/settings/SettingsPanel"
-import { TagFormModal } from "@/components/forms/TagFormModal"
+// Import child components (assuming PascalCase filenames)
+import { Header } from "./Header" // Assumes Header.tsx
+import { TaskGroupsBubbles } from "@/components/groups/TaskGroupsBubbles" // Assumes TaskGroupsBubbles.tsx
+import { TaskList } from "@/components/tasks/TaskList" // Assumes TaskList.tsx
+import { StatsDashboard } from "@/components/stats/StatsDashboard" // Assumes StatsDashboard.tsx
+import { TaskTabs } from "@/components/tasks/TaskTabs" // Assumes TaskTabs.tsx
+import { TaskFilters } from "@/components/tasks/TaskFilters" // Assumes TaskFilters.tsx
+import { TaskFormModal } from "@/components/forms/TaskFormModal" // Assumes TaskFormModal.tsx
+import { GroupFormModal } from "@/components/forms/GroupFormModal" // Assumes GroupFormModal.tsx
+import { SettingsPanel } from "@/components/settings/SettingsPanel" // Assumes SettingsPanel.tsx
+import { TagFormModal } from "@/components/forms/TagFormModal" // Assumes TagFormModal.tsx
 
 export function TaskDashboard() {
   const {
     user,
     tasks,
     groups,
-    settings,
+    // settings, // settings will be removed as theme comes from useTheme
     isLoading,
     activeTab,
     filters,
     showFilters,
     reorderTasks,
+    moveTaskToGroup, // Added moveTaskToGroup
     isTaskFormOpen,
     isGroupFormOpen,
     isTagFormOpen,
     isSettingsPanelOpen,
   } = useAppStore()
 
+  const { theme } = useTheme(); // Added theme from useTheme
+
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor))
 
   // Filter tasks based on active tab and filters
-  const filteredTasks = React.useMemo(() => {
+  const filteredTasks = useMemo(() => { // Changed from React.useMemo
     let result = [...tasks]
 
     // Filter by tab
@@ -103,13 +107,23 @@ export function TaskDashboard() {
     const { active, over } = event
     if (!over || active.id === over.id) return
 
+    // Check if the drag is for moving to a group (if groups are draggable targets)
+    // This part depends on how DND is set up for groups vs tasks.
+    // For now, assuming this handleDragEnd is primarily for task reordering within the list.
+    // If groups are drop targets, 'over.data.current.type' might distinguish.
+
     const oldIndex = filteredTasks.findIndex((t) => t.id === active.id)
     const newIndex = filteredTasks.findIndex((t) => t.id === over.id)
 
     if (oldIndex !== -1 && newIndex !== -1) {
       const reordered = arrayMove(filteredTasks, oldIndex, newIndex)
-      reorderTasks(reordered)
+      reorderTasks(reordered) // This reorders within the current view/filter
     }
+    // Logic for moveTaskToGroup would typically be handled if 'over' is a group
+    // and 'active' is a task. Example:
+    // if (over.data.current?.type === 'group' && active.data.current?.type === 'task') {
+    //   moveTaskToGroup(active.id as string, over.id as string);
+    // }
   }
 
   if (isLoading) {
@@ -123,7 +137,7 @@ export function TaskDashboard() {
     )
   }
 
-  const theme = settings?.theme || "default"
+  // const theme = settings?.theme || "default"; // Removed, theme comes from useTheme()
 
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>

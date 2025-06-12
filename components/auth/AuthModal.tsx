@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState } from "react" // Changed from "import * as React from "react""
 import { useTranslations } from "next-intl"
 import { supabase } from "@/lib/supabase-client"
 import { Button } from "@/components/ui/button"
@@ -9,12 +9,12 @@ import { Loader2, Sparkles, User } from "lucide-react"
 
 interface AuthModalProps {
   onGuestContinue: () => void
-  onClose: () => void
+  onClose?: () => void; // Added onClose
 }
 
-export function AuthModal({ onGuestContinue, onClose }: AuthModalProps) {
+export function AuthModal({ onGuestContinue, onClose }: AuthModalProps) { // Added onClose to destructuring
   const t = useTranslations()
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false) // Changed from React.useState
 
   const handleGoogleSignIn = async () => {
     try {
@@ -37,16 +37,22 @@ export function AuthModal({ onGuestContinue, onClose }: AuthModalProps) {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
+          {/* Optional: Add a close button if onClose is provided */}
+          {/* {onClose && (
+            <Button variant="ghost" size="icon" className="absolute right-4 top-4" onClick={onClose}>
+              <X className="h-4 w-4" />
+            </Button>
+          )} */}
           <div className="mx-auto w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mb-4">
             <Sparkles className="w-6 h-6 text-white" />
           </div>
-          <CardTitle className="text-2xl font-bold text-primary">آئورا تسک</CardTitle>
-          <CardDescription>مدیریت هوشمند وظایف با قدرت هوش مصنوعی</CardDescription>
+          <CardTitle className="text-2xl font-bold text-primary">{t("app.title")}</CardTitle>
+          <CardDescription>{t("app.subtitle")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Button onClick={handleGoogleSignIn} disabled={loading} className="w-full" size="lg">
             {loading ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : null}
-            ورود با گوگل
+            {t("auth.signIn")}
           </Button>
 
           <div className="relative">
@@ -54,13 +60,13 @@ export function AuthModal({ onGuestContinue, onClose }: AuthModalProps) {
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">یا</span>
+              <span className="bg-background px-2 text-muted-foreground">{t("common.or")}</span> {/* Changed from "یا" */}
             </div>
           </div>
 
           <Button variant="outline" onClick={onGuestContinue} className="w-full" size="lg">
             <User className="ml-2 h-4 w-4" />
-            ادامه به عنوان مهمان
+            {t("auth.signInAsGuest")}
           </Button>
         </CardContent>
       </Card>
