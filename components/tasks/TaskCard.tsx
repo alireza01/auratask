@@ -7,10 +7,12 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { supabase } from "@/lib/supabase-client"
+// import { supabase } from "@/lib/supabase-client" // Remove direct Supabase client
 import { useAppStore } from "@/lib/store"
 import { Clock, Star, MoreHorizontal, CheckCircle2 } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+// import { useToast } from "@/hooks/use-toast" // Remove useToast
+import { useTranslations } from "next-intl" // Import useTranslations
+import { toast as sonnerToast } from "sonner" // Import sonner
 import { cn } from "@/lib/utils"
 
 interface TaskCardProps {
@@ -19,40 +21,32 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ task, className }: TaskCardProps) {
-  const { toast } = useToast()
+  const t = useTranslations() // Initialize useTranslations
+  // const { toast } = useToast() // Remove useToast initialization
   const { updateTask } = useAppStore()
   const [loading, setLoading] = useState(false)
   const [justCompleted, setJustCompleted] = useState(false)
 
   const handleToggleComplete = async () => {
+    setLoading(true)
     try {
-      setLoading(true)
-
       if (!task.is_completed) {
         setJustCompleted(true)
         // Brief delay to show the animation
         setTimeout(() => setJustCompleted(false), 1000)
       }
 
-      const { error } = await supabase
-        .from("tasks")
-        .update({
-          is_completed: !task.is_completed,
-        })
-        .eq("id", task.id)
+      // The updateTask store action is responsible for backend and state update
+      // It also handles its own success/error toasts (currently in Farsi from store.ts)
+      await updateTask(task.id, { is_completed: !task.is_completed })
 
-      if (error) throw error
-
-      updateTask(task.id, {
-        is_completed: !task.is_completed,
-      })
+      // If the store's toast is not internationalized or we want more specific component-level messages,
+      // we could add them here. For now, relying on store's toast for success,
+      // and will add internationalized error toast below.
     } catch (error) {
-      console.error("Error updating task:", error)
-      toast({
-        title: "خطا",
-        description: "خطا در به‌روزرسانی وظیفه",
-        variant: "destructive",
-      })
+      console.error("Error updating task in TaskCard:", error) // More specific console log
+      // Show internationalized error toast from the component
+      sonnerToast.error(t("tasks.taskUpdateError"))
     } finally {
       setLoading(false)
     }

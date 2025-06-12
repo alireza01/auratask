@@ -12,6 +12,7 @@ import { useAppStore } from "@/lib/store"
 import { Badge } from "@/components/ui/badge"
 import { Trash2, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useTranslations } from "next-intl"; // Add this import
 
 const BubbleMaterial = shaderMaterial(
   {
@@ -194,6 +195,7 @@ interface InteractiveBubbleProps {
 }
 
 function InteractiveBubble({ group, tasks, position, onDelete, onClick }: InteractiveBubbleProps) {
+  const t = useTranslations("NedaBubbleGroup"); // Initialize t
   const meshRef = useRef<THREE.Mesh>(null)
   const materialRef = useRef<any>()
   const [isHeld, setIsHeld] = useState(false)
@@ -334,11 +336,11 @@ function InteractiveBubble({ group, tasks, position, onDelete, onClick }: Intera
               <div className="flex gap-2 flex-wrap justify-center">
                 <Badge className="bg-white/25 backdrop-blur-md text-white border-white/30 shadow-lg">
                   <Sparkles className="w-3 h-3 mr-1" />
-                  {totalTasks} وظیفه
+                  {t("taskCount", { count: totalTasks })}
                 </Badge>
                 {completedTasks > 0 && (
                   <Badge className="bg-emerald-500/80 backdrop-blur-md text-white shadow-lg">
-                    ✓ {completedTasks} تکمیل
+                    {t("completedCount", { count: completedTasks })}
                   </Badge>
                 )}
               </div>
