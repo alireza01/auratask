@@ -1,11 +1,33 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase-server"
 import { withRateLimit } from "@/lib/with-rate-limit"
+import { ProcessTaskSchema } from "@/lib/validationSchemas"
 
 async function processTaskHandler(request: NextRequest) {
   try {
-    const { title, description, enable_ai_ranking, enable_ai_subtasks } = await request.json()
+    const requestBody = await request.json()
+    const validationResult = await ProcessTaskSchema.safeParseAsync(requestBody)
 
+    if (!validationResult.success) {
+      const supabase = createClient() // Initialize client for logging
+      await supabase.rpc("log_event", {
+        p_level: "WARNING",
+        p_message: "Process-task request validation failed",
+        p_metadata: {
+          errors: validationResult.error.flatten().fieldErrors,
+          receivedBody: requestBody, // Be mindful of logging sensitive data
+        },
+      })
+      return NextResponse.json(
+        {
+          message: "Invalid request data",
+          errors: validationResult.error.flatten().fieldErrors,
+        },
+        { status: 400 }
+      )
+    }
+
+    const { title, description, enable_ai_ranking, enable_ai_subtasks } = validationResult.data
     const supabase = createClient()
 
     // Get the authenticated user

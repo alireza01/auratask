@@ -1,14 +1,11 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase-server"
+import { DeleteApiKeyParamsSchema } from "@/lib/validationSchemas"
 
 export async function POST(request: Request) {
   const supabase = createClient()
   const url = new URL(request.url)
-  const id = url.searchParams.get("id")
-
-  if (!id) {
-    return NextResponse.json({ message: "Missing API key ID" }, { status: 400 })
-  }
+  const idFromParams = url.searchParams.get("id")
 
   // Check if user is authenticated and is an admin
   const {
@@ -23,6 +20,29 @@ export async function POST(request: Request) {
   if (!userSettings?.is_admin) {
     return NextResponse.json({ message: "Forbidden" }, { status: 403 })
   }
+
+  const validationResult = DeleteApiKeyParamsSchema.safeParse({ id: idFromParams })
+
+  if (!validationResult.success) {
+    await supabase.rpc("log_event", {
+      p_level: "WARNING",
+      p_message: "Delete-api-key request validation failed (URL parameter)",
+      p_metadata: {
+        errors: validationResult.error.flatten().fieldErrors,
+        userId: user?.id,
+        receivedId: idFromParams,
+      },
+    })
+    return NextResponse.json(
+      {
+        message: "Invalid URL parameter: id",
+        errors: validationResult.error.flatten().fieldErrors,
+      },
+      { status: 400 }
+    )
+  }
+
+  const { id } = validationResult.data
 
   try {
     const { error } = await supabase.from("admin_api_keys").delete().eq("id", id)
