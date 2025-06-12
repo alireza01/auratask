@@ -1,8 +1,8 @@
-﻿"use client"
+"use client"
 
 import { useEffect, useState } from "react"
 import { useTranslations } from "next-intl"
-import { getSupabaseClient }m "@/lib/supabase-client" // Changed import alias for clarity
+import { getSupabaseClient } from "@/lib/supabase-client" // Changed import alias for clarity
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
