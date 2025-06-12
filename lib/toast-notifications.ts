@@ -1,7 +1,7 @@
 // lib/toast-notifications.ts
 import React from 'react';
 import { toast } from 'sonner';
-import { Sparkles, Star, Crown, Trophy, Target, Award, Gem, Flame, Fire, Zap, Moon, Sun, Brain, FolderOpen, Users, Icon as LucideIcon } from 'lucide-react';
+import { Sparkles, Star, Crown, Trophy, Target, Award, Gem, Flame, Zap, Moon, Sun, Brain, FolderOpen, Users, Icon as LucideIcon } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { triggerHapticFeedback, HapticFeedbackType } from './haptics';
 
@@ -39,7 +39,6 @@ const iconMap: Record<string, LucideIcon | ComponentType<any>> = {
   Crown,
   Gem,
   Flame,
-  Fire,
   Zap,
   Moon,
   Sun,
