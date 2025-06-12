@@ -1,6 +1,3 @@
-import type React from 'react';
-import { Flame, Trophy, Sparkles } from 'lucide-react';
-
 export interface ThemeConfig {
   streakIcon: React.ReactNode | string;
   achievementIcon: React.ReactNode | string;
@@ -9,9 +6,9 @@ export interface ThemeConfig {
 
 export const themes: Record<string, ThemeConfig> = {
   default: {
-    streakIcon: <Flame className="w-4 h-4" />,
-    achievementIcon: <Trophy className="w-6 h-6 text-yellow-500" />, // Example class, adjust as needed
-    celebrationIcon: <Sparkles className="w-4 h-4 text-yellow-400" />, // Default celebration icon
+    streakIcon: "Flame",
+    achievementIcon: "Trophy",
+    celebrationIcon: "Sparkles",
   },
   alireza: {
     streakIcon: "🍌",
@@ -19,9 +16,9 @@ export const themes: Record<string, ThemeConfig> = {
     celebrationIcon: "🍌",
   },
   neda: {
-    streakIcon: <Flame className="w-4 h-4 text-pink-500" />, // Example class, adjust as needed
-    achievementIcon: <Trophy className="w-6 h-6 text-pink-500" />, // Example class, adjust as needed
-    celebrationIcon: <Sparkles className="w-4 h-4 text-pink-400" />, // Neda's celebration icon
+    streakIcon: "Flame",
+    achievementIcon: "Trophy",
+    celebrationIcon: "Sparkles",
   },
   // Add other themes here if necessary
 };

@@ -713,7 +713,7 @@ export const useAppStore = create<AppState>()(
           }
         },
 
-        deleteGroup: async (groupId) => {
+        deleteGroup: async (groupId, tSuccess, tError) => {
           try {
             // Optimistic update
             set((state) => ({

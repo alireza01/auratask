@@ -1,4 +1,5 @@
 // lib/toast-notifications.ts
+import React from 'react';
 import { toast } from 'sonner';
 import { Sparkles, Star, Crown, Trophy, Target, Award, Gem, Flame, Fire, Zap, Moon, Sun, Brain, FolderOpen, Users, Icon as LucideIcon } from 'lucide-react';
 import type { ComponentType } from 'react';
@@ -64,22 +65,20 @@ export function showAuraAwardToast(
   tCloseButtonLabel: string,
 ) {
   triggerHapticFeedback(HapticFeedbackType.Success);
-  toast.custom((t) => (
-    <div className="p-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-xl rounded-lg flex items-center gap-4 border border-purple-700">
-      <Sparkles className="w-7 h-7 text-yellow-300 flex-shrink-0" />
-      <div className="flex-grow">
-        <p className="font-bold text-lg">{tAuraAwardTitle.replace("{points}", points.toString())}</p>
-        <p className="text-sm opacity-90">{reason}</p>
-      </div>
-      <button
-        onClick={() => toast.dismiss(t)}
-        className="ml-auto p-1 rounded-full hover:bg-white/20 transition-colors text-sm"
-        aria-label={tCloseButtonLabel}
-      >
-        ✕
-      </button>
-    </div>
-  ), { duration: 3000 });
+  toast.custom((t) =>
+    React.createElement('div', { className: "p-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-xl rounded-lg flex items-center gap-4 border border-purple-700" },
+      React.createElement(Sparkles, { className: "w-7 h-7 text-yellow-300 flex-shrink-0" }),
+      React.createElement('div', { className: "flex-grow" },
+        React.createElement('p', { className: "font-bold text-lg" }, tAuraAwardTitle.replace("{points}", points.toString())),
+        React.createElement('p', { className: "text-sm opacity-90" }, reason)
+      ),
+      React.createElement('button', {
+        onClick: () => toast.dismiss(t),
+        className: "ml-auto p-1 rounded-full hover:bg-white/20 transition-colors text-sm",
+        'aria-label': tCloseButtonLabel
+      }, '✕')
+    )
+  , { duration: 3000 });
 }
 
 export function showLevelUpToast(
@@ -90,28 +89,26 @@ export function showLevelUpToast(
   // tCloseButtonLabel: string // This toast doesn't have a '✕' button, dismissed by action or timeout
 ) {
   triggerHapticFeedback(HapticFeedbackType.LevelUp);
-  toast.custom((t) => (
-    <div className="p-6 max-w-sm mx-auto bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white rounded-xl shadow-2xl text-center relative overflow-hidden">
-      <div className="absolute -top-4 -left-4 w-16 h-16 bg-white/20 rounded-full animate-pulse"></div>
-      <div className="absolute -bottom-4 -right-4 w-20 h-20 bg-white/20 rounded-full animate-pulse delay-75"></div>
-      <div className="relative z-10">
-        <div className="flex justify-center mb-3">
-          <Crown className="w-16 h-16 text-yellow-400 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]" />
-        </div>
-        <h1 className="text-3xl font-bold mb-2">{tLevelUpTitle}</h1>
-        <div className="text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-orange-400 mb-3 drop-shadow-[0_2px_2px_rgba(0,0,0,0.3)]">
-          {newLevel}
-        </div>
-        <p className="text-md opacity-90">{tKeepGrowing}</p>
-         <button
-            onClick={() => toast.dismiss(t)}
-            className="mt-4 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-semibold transition-colors"
-          >
-            {tContinueButton}
-          </button>
-      </div>
-    </div>
-  ), { duration: 6000, position: 'top-center' });
+  toast.custom((t) =>
+    React.createElement('div', { className: "p-6 max-w-sm mx-auto bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white rounded-xl shadow-2xl text-center relative overflow-hidden" },
+      React.createElement('div', { className: "absolute -top-4 -left-4 w-16 h-16 bg-white/20 rounded-full animate-pulse" }),
+      React.createElement('div', { className: "absolute -bottom-4 -right-4 w-20 h-20 bg-white/20 rounded-full animate-pulse delay-75" }),
+      React.createElement('div', { className: "relative z-10" },
+        React.createElement('div', { className: "flex justify-center mb-3" },
+          React.createElement(Crown, { className: "w-16 h-16 text-yellow-400 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]" })
+        ),
+        React.createElement('h1', { className: "text-3xl font-bold mb-2" }, tLevelUpTitle),
+        React.createElement('div', { className: "text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-orange-400 mb-3 drop-shadow-[0_2px_2px_rgba(0,0,0,0.3)]" },
+          newLevel
+        ),
+        React.createElement('p', { className: "text-md opacity-90" }, tKeepGrowing),
+        React.createElement('button', {
+          onClick: () => toast.dismiss(t),
+          className: "mt-4 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-semibold transition-colors"
+        }, tContinueButton)
+      )
+    )
+  , { duration: 6000, position: 'top-center' });
 }
 
 export function showAchievementUnlockedToast(
@@ -136,38 +133,37 @@ export function showAchievementUnlockedToast(
     default: translatedRarity = achievement.rarity; // fallback
   }
 
-  toast.custom((t) => (
-    <div
-      style={{
+  toast.custom((t) =>
+    React.createElement('div', {
+      style: {
         borderColor: rarityStyles.borderColor,
         backgroundColor: rarityStyles.backgroundColor,
         boxShadow: `0 0 15px -3px ${rarityStyles.borderColor}`
-      }}
-      className="p-4 shadow-lg rounded-lg border-2 flex items-start gap-4 w-full max-w-md backdrop-blur-sm"
-    >
-      <div className={`p-3 rounded-lg text-white flex-shrink-0`} style={{ backgroundColor: rarityStyles.borderColor, boxShadow: `0 0 10px ${rarityStyles.borderColor}` }}>
-        <IconComponent className="w-8 h-8" />
-      </div>
-      <div className="flex-grow">
-        <h3 className="font-bold text-md" style={{color: rarityStyles.textColor}}>{achievement.description}</h3>
-        <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">{achievement.name}</p>
-        <p className="text-sm font-semibold text-green-500 mb-2">
-          {tPointsAwarded.replace("{reward_points}", achievement.reward_points.toString())}
-        </p>
-        <span
-          className={`text-xs px-3 py-1 rounded-full border font-medium`}
-          style={{ borderColor: rarityStyles.borderColor, color: rarityStyles.textColor, backgroundColor: rarityStyles.backgroundColor }}
-        >
-          {translatedRarity}
-        </span>
-      </div>
-      <button
-        onClick={() => toast.dismiss(t)}
-        className="ml-auto p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/20 transition-colors text-sm flex-shrink-0"
-        aria-label={tCloseButtonLabel}
-      >
-        ✕
-      </button>
-    </div>
-  ), { duration: 7000 });
+      },
+      className: "p-4 shadow-lg rounded-lg border-2 flex items-start gap-4 w-full max-w-md backdrop-blur-sm"
+    },
+      React.createElement('div', {
+        className: "p-3 rounded-lg text-white flex-shrink-0", // Removed template literal from className
+        style: { backgroundColor: rarityStyles.borderColor, boxShadow: `0 0 10px ${rarityStyles.borderColor}` }
+      },
+        React.createElement(IconComponent, { className: "w-8 h-8" })
+      ),
+      React.createElement('div', { className: "flex-grow" },
+        React.createElement('h3', { className: "font-bold text-md", style: { color: rarityStyles.textColor } }, achievement.description),
+        React.createElement('p', { className: "text-xs text-gray-600 dark:text-gray-400 mb-1" }, achievement.name),
+        React.createElement('p', { className: "text-sm font-semibold text-green-500 mb-2" },
+          tPointsAwarded.replace("{reward_points}", achievement.reward_points.toString())
+        ),
+        React.createElement('span', {
+          className: "text-xs px-3 py-1 rounded-full border font-medium", // Removed template literal from className
+          style: { borderColor: rarityStyles.borderColor, color: rarityStyles.textColor, backgroundColor: rarityStyles.backgroundColor }
+        }, translatedRarity)
+      ),
+      React.createElement('button', {
+        onClick: () => toast.dismiss(t),
+        className: "ml-auto p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/20 transition-colors text-sm flex-shrink-0",
+        'aria-label': tCloseButtonLabel
+      }, '✕')
+    )
+  , { duration: 7000 });
 }
