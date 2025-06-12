@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useTranslations } from "next-intl"
 import { useAppStore } from "@/lib/store"
-import { useTheme } from "@/components/theme/ThemeProvider"
+import { useTheme } from "@/components/theme/theme-provider"
 import { supabase } from "@/lib/supabase-client"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"

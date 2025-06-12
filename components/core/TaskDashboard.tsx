@@ -4,7 +4,7 @@ import { useMemo } from "react" // Changed from import React
 import { DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core"
 import { arrayMove } from "@dnd-kit/sortable"
 import { useAppStore } from "@/lib/store"
-import { useTheme } from "@/components/theme/ThemeProvider"; // Added useTheme
+import { useTheme } from "@/components/theme/theme-provider"; // Added useTheme
 
 // Import child components (assuming PascalCase filenames)
 import { Header } from "./Header" // Assumes Header.tsx
