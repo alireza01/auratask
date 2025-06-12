@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase-server"
+import { AddApiKeySchema } from "@/lib/validationSchemas"
 
 export async function POST(request: Request) {
   try {
@@ -24,11 +25,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 })
     }
 
-    const { apiKey } = await request.json()
+    const requestBody = await request.json()
+    const validationResult = AddApiKeySchema.safeParse(requestBody)
 
-    if (!apiKey || typeof apiKey !== "string") {
-      return NextResponse.json({ message: "Invalid API key" }, { status: 400 })
+    if (!validationResult.success) {
+      await supabase.rpc("log_event", {
+        p_level: "WARNING",
+        p_message: "Add-api-key request validation failed",
+        p_metadata: {
+          errors: validationResult.error.flatten().fieldErrors,
+          userId: user?.id,
+        },
+      })
+      return NextResponse.json(
+        {
+          message: "Invalid request data",
+          errors: validationResult.error.flatten().fieldErrors,
+        },
+        { status: 400 }
+      )
     }
+
+    const { apiKey } = validationResult.data
 
     // Check if API key already exists
     const { data: existingKey } = await supabase.from("admin_api_keys").select("id").eq("api_key", apiKey).maybeSingle()
