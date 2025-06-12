@@ -7,6 +7,7 @@ import { useAppStore } from "@/lib/store"
 import { Badge } from "@/components/ui/badge"
 import { Trash2, Database, Zap } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useTranslations } from "next-intl" // Import useTranslations
 
 interface DataBlockProps {
   group: TaskGroup
@@ -16,6 +17,7 @@ interface DataBlockProps {
 }
 
 function DataBlock({ group, tasks, onDelete, onClick }: DataBlockProps) {
+  const t = useTranslations("themeAlireza") // Initialize useTranslations
   const [isHeld, setIsHeld] = useState(false)
   const [deleteReady, setDeleteReady] = useState(false)
   const [holdTimer, setHoldTimer] = useState<NodeJS.Timeout | null>(null)
@@ -136,7 +138,8 @@ function DataBlock({ group, tasks, onDelete, onClick }: DataBlockProps) {
                 <h3 className="font-bold text-lg text-yellow-400">{group.name}</h3>
                 <div className="flex items-center gap-1 text-xs text-gray-400">
                   <Database className="w-3 h-3" />
-                  <span>DATA_BLOCK_{group.id.slice(0, 8).toUpperCase()}</span>
+                  {/* TODO: Add "dataBlockIdPrefix" to i18n files (e.g., "DATA_BLOCK_") */}
+                  <span>{t("dataBlockIdPrefix")}{group.id.slice(0, 8).toUpperCase()}</span>
                 </div>
               </div>
             </div>
@@ -159,19 +162,22 @@ function DataBlock({ group, tasks, onDelete, onClick }: DataBlockProps) {
           </div>
 
           <div className="flex gap-2 flex-wrap">
+            {/* TODO: Add "tasksUnit" to i18n files (e.g., "TASKS") */}
             <Badge className="bg-yellow-400/20 text-yellow-400 border-yellow-400/30">
               <Zap className="w-3 h-3 mr-1" />
-              {totalTasks} TASKS
+              {totalTasks} {t("tasksUnit")}
             </Badge>
             {completedTasks > 0 && (
-              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">✓ {completedTasks} COMPLETE</Badge>
+              // TODO: Add "completeUnit" to i18n files (e.g., "COMPLETE")
+              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">✓ {completedTasks} {t("completeUnit")}</Badge>
             )}
           </div>
 
           {totalTasks > 0 && (
             <div className="space-y-2">
               <div className="flex justify-between text-xs text-gray-400">
-                <span>PROGRESS</span>
+                {/* TODO: Add "progressLabel" to i18n files (e.g., "PROGRESS") */}
+                <span>{t("progressLabel")}</span>
                 <span>{Math.round(completionPercentage)}%</span>
               </div>
               <div className="w-full bg-gray-800 rounded-full h-2 overflow-hidden">

@@ -51,7 +51,12 @@ interface AppState {
   migrateGuestData: () => Promise<void>
 
   // Task Actions
-  addTask: (task: Omit<Task, "id" | "created_at" | "updated_at">) => Promise<void>
+  addTask: (
+    task: Omit<Task, "id" | "created_at" | "updated_at"> & {
+      enable_ai_ranking?: boolean
+      enable_ai_subtasks?: boolean
+    },
+  ) => Promise<void>
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>
   deleteTask: (taskId: string) => Promise<void>
   toggleTaskComplete: (taskId: string) => Promise<void>
@@ -330,11 +335,49 @@ export const useAppStore = create<AppState>()(
         },
 
         // Task Actions
-        addTask: async (taskData) => {
-          const { user, guestId } = get()
+        addTask: async (taskDataWithAiFlags) => {
+          const { user, guestId, settings } = get()
+          const { enable_ai_ranking, enable_ai_subtasks, ...taskCoreData } = taskDataWithAiFlags
+
+          let finalTaskData = { ...taskCoreData }
+
+          // If user has AI enabled and API key, process with AI
+          // This AI processing is only for new tasks, which addTask implies.
+          if (settings?.gemini_api_key && (enable_ai_ranking || enable_ai_subtasks)) {
+            // We'll need a way to signal AI processing to the UI if desired,
+            // but for now, the store action will handle it internally.
+            // Consider adding a state like `isAiProcessingTask` to the store if global feedback is needed.
+            try {
+              const aiResponse = await fetch("/api/process-task", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  title: finalTaskData.title,
+                  description: finalTaskData.description,
+                  enable_ai_ranking: enable_ai_ranking,
+                  enable_ai_subtasks: enable_ai_subtasks,
+                }),
+              })
+
+              if (aiResponse.ok) {
+                const aiData = await aiResponse.json()
+                finalTaskData = { ...finalTaskData, ...aiData }
+              } else {
+                console.warn("AI processing failed, proceeding without AI data.")
+                // Optionally, notify the user that AI processing failed but the task was still created.
+                // toast.warn("AI processing failed, task created without AI enhancements.")
+              }
+            } catch (error) {
+              console.error("AI processing error:", error)
+              // Optionally, notify the user
+              // toast.error("An error occurred during AI processing.")
+            }
+          }
 
           try {
-            const insertData = user?.id ? { ...taskData, user_id: user.id } : { ...taskData, guest_id: guestId }
+            const insertData = user?.id
+              ? { ...finalTaskData, user_id: user.id }
+              : { ...finalTaskData, guest_id: guestId }
 
             const { data, error } = await supabase
               .from("tasks")

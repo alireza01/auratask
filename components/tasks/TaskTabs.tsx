@@ -1,90 +1,70 @@
 "use client"
 
-import { motion } from "framer-motion"
 import { useAppStore } from "@/lib/store"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useTranslations } from "next-intl"
 import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
-import { ListTodo, Calendar, Star, CheckCircle } from "lucide-react"
+import { Inbox, Clock, Star, CheckCircle2 } from "lucide-react"
+import type { Task } from "@/types" // Import Task type
 
 interface TaskTabsProps {
-  tasks: any[]
+  tasks: Task[] // Use specific Task type
 }
 
 export function TaskTabs({ tasks }: TaskTabsProps) {
+  const t = useTranslations("tabs") // Assuming "tabs" is a namespace in next-intl
   const { activeTab, setActiveTab } = useAppStore()
 
-  const tabs = [
+  const tabDefinitions = [
     {
       id: "all" as const,
-      label: "همه",
-      icon: ListTodo,
-      count: tasks.filter((t) => !t.is_archived).length,
+      labelKey: "all",
+      icon: Inbox,
+      count: tasks.filter((task) => !task.is_archived).length,
     },
     {
       id: "today" as const,
-      label: "امروز",
-      icon: Calendar,
-      count: tasks.filter((t) => {
-        if (t.is_archived) return false
-        const today = new Date().toDateString()
-        return t.due_date && new Date(t.due_date).toDateString() === today
+      labelKey: "today",
+      icon: Clock,
+      count: tasks.filter((task) => {
+        if (task.is_archived) return false
+        // Ensure due_date is valid before creating a Date object
+        return task.due_date && new Date(task.due_date).toDateString() === new Date().toDateString()
       }).length,
     },
     {
       id: "important" as const,
-      label: "مهم",
+      labelKey: "important",
       icon: Star,
-      count: tasks.filter((t) => !t.is_archived && (t.ai_importance_score || 0) >= 15).length,
+      // Ensure ai_importance_score is present and not null before comparison
+      count: tasks.filter((task) => !task.is_archived && (task.ai_importance_score ?? 0) >= 15).length,
     },
     {
       id: "completed" as const,
-      label: "تکمیل شده",
-      icon: CheckCircle,
-      count: tasks.filter((t) => t.is_completed && !t.is_archived).length,
+      labelKey: "completed",
+      icon: CheckCircle2,
+      count: tasks.filter((task) => task.is_completed && !task.is_archived).length,
     },
   ]
 
   return (
-    <div className="relative">
-      <div className="flex space-x-1 border-b border-border">
-        {tabs.map((tab) => {
-          const Icon = tab.icon
-          const isActive = activeTab === tab.id
-
+    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
+      <TabsList className="grid w-full grid-cols-4">
+        {tabDefinitions.map((tab) => {
+          const IconComponent = tab.icon
           return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                "relative flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors",
-                "hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <Icon className="h-4 w-4" />
-              <span>{tab.label}</span>
+            <TabsTrigger key={tab.id} value={tab.id} className="flex items-center gap-2">
+              <IconComponent className="w-4 h-4" />
+              <span className="hidden sm:inline">{t(tab.labelKey)}</span>
               {tab.count > 0 && (
-                <Badge variant="secondary" className="h-5 text-xs">
+                <Badge variant="secondary" className="h-5 px-1.5 text-xs sm:ml-1">
                   {tab.count}
                 </Badge>
               )}
-
-              {isActive && (
-                <motion.div
-                  layoutId="activeTab"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
-                  initial={false}
-                  transition={{
-                    type: "spring",
-                    stiffness: 500,
-                    damping: 30,
-                  }}
-                />
-              )}
-            </button>
+            </TabsTrigger>
           )
         })}
-      </div>
-    </div>
+      </TabsList>
+    </Tabs>
   )
 }

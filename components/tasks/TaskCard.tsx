@@ -10,7 +10,9 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { supabase } from "@/lib/supabase-client"
 import { useAppStore } from "@/lib/store"
 import { Clock, Star, MoreHorizontal, CheckCircle2 } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+// import { useToast } from "@/hooks/use-toast" // Replaced with sonner
+import { toast } from "sonner" // Import sonner
+import { useTranslations } from "next-intl" // Import useTranslations
 import { cn } from "@/lib/utils"
 
 interface TaskCardProps {
@@ -19,8 +21,10 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ task, className }: TaskCardProps) {
-  const { toast } = useToast()
-  const { updateTask } = useAppStore()
+  // const { toast } = useToast() // Replaced with sonner
+  const t = useTranslations() // Initialize useTranslations
+  const { updateTask } // const { toggleTaskComplete, updateTask } = useAppStore() - toggleTaskComplete could be used here for full store integration
+    = useAppStore()
   const [loading, setLoading] = useState(false)
   const [justCompleted, setJustCompleted] = useState(false)
 
@@ -46,12 +50,17 @@ export function TaskCard({ task, className }: TaskCardProps) {
       updateTask(task.id, {
         is_completed: !task.is_completed,
       })
+      // Note: The store's updateTask might already show a success toast.
+      // If not, or if a specific success message for toggle is needed here:
+      // toast.success(t("tasks.updateSuccess")); // Example success toast
     } catch (error) {
       console.error("Error updating task:", error)
-      toast({
-        title: "خطا",
-        description: "خطا در به‌روزرسانی وظیفه",
-        variant: "destructive",
+      // TODO: Ensure these translation keys are added to your i18n files (e.g., common.json, tasks.json)
+      // Possible keys:
+      // common.error -> "خطا" (Error)
+      // tasks.updateError -> "خطا در به‌روزرسانی وظیفه" (Error updating task)
+      toast.error(t("common.error"), {
+        description: t("tasks.updateError"),
       })
     } finally {
       setLoading(false)

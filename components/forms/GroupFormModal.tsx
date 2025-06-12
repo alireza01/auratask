@@ -5,85 +5,74 @@ import type React from "react"
 import { useState } from "react"
 import { useTranslations } from "next-intl"
 import { useAppStore } from "@/lib/store"
-import { supabase } from "@/lib/supabase-client"
+// import { supabase } from "@/lib/supabase-client" // No longer needed
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
-import type { TaskGroup } from "@/types"
+// import { useToast } from "@/hooks/use-toast" // No longer needed, store handles toasts
+// import type { TaskGroup } from "@/types" // No longer needed for props
 import { Loader2 } from "lucide-react"
+import { useEffect } from "react" // Import useEffect
 
-interface GroupFormModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  group?: TaskGroup
-}
+// interface GroupFormModalProps { // No longer needed
+// open: boolean
+// onOpenChange: (open: boolean) => void
+// group?: TaskGroup
+// }
 
-export function GroupFormModal({ open, onOpenChange, group }: GroupFormModalProps) {
+export function GroupFormModal() {
   const t = useTranslations()
-  const { toast } = useToast()
-  const { user, addGroup, updateGroup } = useAppStore()
-  const [name, setName] = useState(group?.name || "")
+  // const { toast } = useToast() // Store handles toasts
+  const { isGroupFormOpen, closeGroupForm, editingGroup, addGroup, updateGroup, user } = useAppStore() // Get user for addGroup default emoji if needed, though store handles user_id
+  const [name, setName] = useState("")
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (editingGroup) {
+      setName(editingGroup.name || "")
+    } else {
+      setName("") // Reset for new group
+    }
+  }, [editingGroup, isGroupFormOpen]) // Depend on isGroupFormOpen to reset when modal reopens for new
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
 
+    setLoading(true)
     try {
-      setLoading(true)
-
-      if (group) {
-        // Update existing group
-        const { error } = await supabase.from("task_groups").update({ name: name.trim() }).eq("id", group.id)
-
-        if (error) throw error
-        updateGroup(group.id, { name: name.trim() })
+      if (editingGroup) {
+        await updateGroup(editingGroup.id, { name: name.trim() })
       } else {
-        // Create new group
-        const { data, error } = await supabase
-          .from("task_groups")
-          .insert([
-            {
-              user_id: user!.id,
-              name: name.trim(),
-              emoji: "📁",
-            },
-          ])
-          .select()
-          .single()
-
-        if (error) throw error
-        addGroup(data as TaskGroup)
+        // The store's addGroup action will handle setting user_id/guest_id
+        // and other defaults like created_at.
+        // We just need to provide the core data.
+        await addGroup({ name: name.trim(), emoji: "📁" }) // Default emoji, store might allow customization later
       }
-
-      toast({
-        title: t("common.success"),
-        description: group ? "گروه با موفقیت به‌روزرسانی شد" : "گروه با موفقیت ایجاد شد",
-      })
-
-      setName("")
-      onOpenChange(false)
+      // Toasts are handled by store actions.
+      // setName("") // Not strictly necessary as closeGroupForm will reset editingGroup which triggers useEffect
+      closeGroupForm()
     } catch (error) {
       console.error("Error saving group:", error)
-      toast({
-        title: t("common.error"),
-        description: "خطا در ذخیره گروه",
-        variant: "destructive",
-      })
+      // Toasts for errors are also expected to be handled by store actions.
     } finally {
       setLoading(false)
     }
   }
 
+  // Do not render if not open, though Dialog handles this with its `open` prop
+  if (!isGroupFormOpen) {
+    return null
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={isGroupFormOpen} onOpenChange={closeGroupForm}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{group ? "ویرایش گروه" : "ایجاد گروه جدید"}</DialogTitle>
+          <DialogTitle>{editingGroup ? "ویرایش گروه" : "ایجاد گروه جدید"}</DialogTitle>
           <DialogDescription>
-            {group ? "نام گروه را ویرایش کنید" : "گروه جدید برای سازماندهی وظایف ایجاد کنید"}
+            {editingGroup ? "نام گروه را ویرایش کنید" : "گروه جدید برای سازماندهی وظایف ایجاد کنید"}
           </DialogDescription>
         </DialogHeader>
 
@@ -100,12 +89,12 @@ export function GroupFormModal({ open, onOpenChange, group }: GroupFormModalProp
           </div>
 
           <div className="flex gap-2 justify-end">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={closeGroupForm}>
               {t("common.cancel")}
             </Button>
             <Button type="submit" disabled={loading || !name.trim()}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
-              {group ? "به‌روزرسانی" : "ایجاد"}
+              {editingGroup ? "به‌روزرسانی" : "ایجاد"}
             </Button>
           </div>
         </form>

@@ -32,7 +32,7 @@ export function TaskFormModal() {
   const [enableAiRanking, setEnableAiRanking] = useState(true)
   const [enableAiSubtasks, setEnableAiSubtasks] = useState(true)
   const [loading, setLoading] = useState(false)
-  const [aiProcessing, setAiProcessing] = useState(false)
+  // const [aiProcessing, setAiProcessing] = useState(false) // This can be removed or kept if specific UI for AI processing phase is still desired
 
   useEffect(() => {
     if (editingTask) {
@@ -60,51 +60,39 @@ export function TaskFormModal() {
 
     setLoading(true)
     try {
-      let taskData: any = {
+      const taskPayload: any = {
         title: title.trim(),
         description: description.trim() || null,
         group_id: groupId,
         due_date: dueDate?.toISOString(),
-        enable_ai_ranking: enableAiRanking,
-        enable_ai_subtasks: enableAiSubtasks,
-        emoji: "📝",
-      }
-
-      // If user has AI enabled and API key, process with AI
-      if (settings?.gemini_api_key && !editingTask && (enableAiRanking || enableAiSubtasks)) {
-        setAiProcessing(true)
-        try {
-          const aiResponse = await fetch("/api/process-task", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              title: title.trim(),
-              description: description.trim(),
-              enable_ai_ranking: enableAiRanking,
-              enable_ai_subtasks: enableAiSubtasks,
-            }),
-          })
-
-          if (aiResponse.ok) {
-            const aiData = await aiResponse.json()
-            taskData = { ...taskData, ...aiData }
-          }
-        } catch (error) {
-          console.error("AI processing failed:", error)
-        } finally {
-          setAiProcessing(false)
-        }
+        emoji: "📝", // Default emoji, AI might overwrite or add one
+        // enable_ai_ranking and enable_ai_subtasks are passed for new tasks
       }
 
       if (editingTask) {
-        await updateTask(editingTask.id, taskData)
+        // For updates, AI processing is not currently part of the flow.
+        // Pass only core task data.
+        // Note: enable_ai_ranking and enable_ai_subtasks from editingTask are used to set switches,
+        // but their direct update path here might need clarification if they should be editable post-creation.
+        // For now, we'll assume they are set at creation and updated if the task is edited.
+         await updateTask(editingTask.id, {
+          ...taskPayload,
+          enable_ai_ranking: enableAiRanking, // Persist the current switch state
+          enable_ai_subtasks: enableAiSubtasks, // Persist the current switch state
+        })
       } else {
-        await addTask(taskData)
+        // For new tasks, pass the AI flags to the store action
+        await addTask({
+          ...taskPayload,
+          enable_ai_ranking: enableAiRanking,
+          enable_ai_subtasks: enableAiSubtasks,
+        })
       }
 
       closeTaskForm()
     } catch (error) {
       console.error("Error saving task:", error)
+      // Error toast is likely handled by the store actions
     } finally {
       setLoading(false)
     }
@@ -241,7 +229,9 @@ export function TaskFormModal() {
                   <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
                     <Sparkles className="w-4 h-4" />
                     <span>هوش مصنوعی این وظیفه را تحلیل خواهد کرد</span>
-                    {aiProcessing && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {/* Consider if aiProcessing state is still needed or if `loading` is sufficient */}
+                    {/* If store handles AI processing silently, this specific indicator might not be needed */}
+                    {/* {loading && (enableAiRanking || enableAiSubtasks) && !editingTask && <Loader2 className="w-4 h-4 animate-spin" />} */}
                   </div>
                 )}
               </div>
