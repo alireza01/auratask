@@ -40,8 +40,8 @@ interface ApiKeyClient {
 
 export default function AdminPage() {
   const [stats, setStats] = useState<AdminStats | null>(null)
-  const [userGrowth, setUserGrowth] = useState([])
-  const [taskStats, setTaskStats] = useState([])
+  const [userGrowth, setUserGrowth] = useState<any[]>([])
+  const [taskStats, setTaskStats] = useState<any[]>([])
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [apiKeys, setApiKeys] = useState<ApiKeyClient[]>([])
   const [loading, setLoading] = useState(true)
@@ -322,4 +322,5 @@ export default function AdminPage() {
     </div>
   )
 }
+
 
