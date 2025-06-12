@@ -3,7 +3,6 @@
 import type React from "react"
 
 import { useState } from "react"
-import { useState } from "react"
 import { Loader2, PlusCircle, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
