@@ -1,77 +1,67 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import type React from "react" // Keep React import for React.FormEvent
+import { useState, useEffect } from "react" // Add useEffect
 import { useTranslations } from "next-intl"
 import { useAppStore } from "@/lib/store"
-import { supabase } from "@/lib/supabase-client"
+// import { supabase } from "@/lib/supabase-client" // Remove direct Supabase client
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
+// import { useToast } from "@/hooks/use-toast" // Remove useToast
+import { toast as sonnerToast } from "sonner" // Import sonner
 import type { TaskGroup } from "@/types"
 import { Loader2 } from "lucide-react"
 
 interface GroupFormModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  group?: TaskGroup
+  group?: TaskGroup // This is the editingGroup from the store
 }
 
 export function GroupFormModal({ open, onOpenChange, group }: GroupFormModalProps) {
-  const t = useTranslations()
-  const { toast } = useToast()
-  const { user, addGroup, updateGroup } = useAppStore()
-  const [name, setName] = useState(group?.name || "")
+  const t = useTranslations() // Initialize useTranslations
+  // const { toast } = useToast() // Remove useToast initialization
+  const { user, addGroup, updateGroup } = useAppStore() // user might not be needed if store handles it
+  const [name, setName] = useState("")
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (open) {
+      setName(group?.name || "")
+    }
+  }, [open, group])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
 
+    setLoading(true)
     try {
-      setLoading(true)
-
       if (group) {
         // Update existing group
-        const { error } = await supabase.from("task_groups").update({ name: name.trim() }).eq("id", group.id)
-
-        if (error) throw error
-        updateGroup(group.id, { name: name.trim() })
+        await updateGroup(group.id, { name: name.trim() })
+        // sonnerToast.success(t("groups.groupUpdatedSuccess")) // Store action might already show a toast
       } else {
         // Create new group
-        const { data, error } = await supabase
-          .from("task_groups")
-          .insert([
-            {
-              user_id: user!.id,
-              name: name.trim(),
-              emoji: "📁",
-            },
-          ])
-          .select()
-          .single()
-
-        if (error) throw error
-        addGroup(data as TaskGroup)
+        // Assuming addGroup in store handles user_id and default emoji if not provided
+        await addGroup({ name: name.trim(), emoji: "📁" }) // Pass emoji if store action expects it
+        // sonnerToast.success(t("groups.groupCreatedSuccess")) // Store action might already show a toast
       }
 
-      toast({
-        title: t("common.success"),
-        description: group ? "گروه با موفقیت به‌روزرسانی شد" : "گروه با موفقیت ایجاد شد",
-      })
+      // Display success toast using internationalized strings (as per instruction, may be redundant)
+      // The store actions `addGroup` and `updateGroup` already show toasts in Farsi.
+      // For this exercise, we'll add the requested internationalized toasts.
+      // In a real scenario, we'd choose one place (component or store) to show these.
+      sonnerToast.success(group ? t("groups.groupUpdatedSuccess") : t("groups.groupCreatedSuccess"));
 
-      setName("")
-      onOpenChange(false)
+      setName("") // Reset name
+      onOpenChange(false) // Close modal
     } catch (error) {
       console.error("Error saving group:", error)
-      toast({
-        title: t("common.error"),
-        description: "خطا در ذخیره گروه",
-        variant: "destructive",
-      })
+      // Display error toast using internationalized strings
+      sonnerToast.error(t("groups.groupErrorSaving"))
     } finally {
       setLoading(false)
     }
@@ -81,20 +71,22 @@ export function GroupFormModal({ open, onOpenChange, group }: GroupFormModalProp
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{group ? "ویرایش گروه" : "ایجاد گروه جدید"}</DialogTitle>
+          <DialogTitle>
+            {group ? t("groups.editGroupTitle") : t("groups.newGroupTitle")}
+          </DialogTitle>
           <DialogDescription>
-            {group ? "نام گروه را ویرایش کنید" : "گروه جدید برای سازماندهی وظایف ایجاد کنید"}
+            {group ? t("groups.editGroupDescription") : t("groups.newGroupDescription")}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="groupName">نام گروه</Label>
+            <Label htmlFor="groupName">{t("groups.groupNameLabel")}</Label>
             <Input
               id="groupName"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="مثال: کار، شخصی، خرید"
+              placeholder={t("groups.groupNamePlaceholder")}
               required
             />
           </div>
@@ -104,8 +96,8 @@ export function GroupFormModal({ open, onOpenChange, group }: GroupFormModalProp
               {t("common.cancel")}
             </Button>
             <Button type="submit" disabled={loading || !name.trim()}>
-              {loading ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
-              {group ? "به‌روزرسانی" : "ایجاد"}
+              {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              {group ? t("common.update") : t("common.create")}
             </Button>
           </div>
         </form>

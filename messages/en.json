@@ -21,7 +21,10 @@
     "clear": "Clear",
     "confirm": "Confirm",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "update": "Update",
+    "create": "Create",
+    "errorSubmittingForm": "Error submitting form. Please try again."
   },
   "auth": {
     "signIn": "Sign In",
@@ -48,7 +51,45 @@
     "description": "Description",
     "completed": "Completed",
     "pending": "Pending",
-    "overdue": "Overdue"
+    "overdue": "Overdue",
+    "newTask": "Create New Task",
+    "editTaskDescription": "Update the details of your existing task.",
+    "newTaskWithAiDescription": "Describe your task and let AI help you organize and prioritize.",
+    "taskTitle": "Task Title",
+    "titlePlaceholder": "e.g., Schedule a meeting with the team",
+    "taskDescription": "Task Description",
+    "descriptionPlaceholder": "e.g., Discuss project milestones and next steps",
+    "selectDate": "Select a date",
+    "aiSettingsLabel": "AI Enhancements",
+    "aiRankingLabel": "AI-Powered Prioritization",
+    "aiRankingDescription": "Let AI analyze and suggest task priority.",
+    "aiSubtasksLabel": "AI-Generated Subtasks",
+    "aiSubtasksDescription": "Let AI break down this task into smaller subtasks.",
+    "aiWillProcessTask": "AI will process this task upon creation for enhancements.",
+    "createTask": "Create Task",
+    "taskUpdatedSuccess": "Task updated successfully!",
+    "taskCreatedSuccess": "Task created successfully!",
+    "taskErrorSaving": "Error saving task. Please try again.",
+    "taskUpdateError": "Error updating task. Please try again.",
+    "completedTasks": "Completed Tasks",
+    "archivedTasksTitle": "Archived Tasks"
+  },
+  "groups": {
+    "groupName": "Group",
+    "selectGroupPlaceholder": "Select a group (optional)",
+    "noGroup": "No Group",
+    "editGroupTitle": "Edit Group",
+    "newGroupTitle": "Create New Group",
+    "editGroupDescription": "Edit the name of your group.",
+    "newGroupDescription": "Create a new group to organize your tasks.",
+    "groupNameLabel": "Group Name",
+    "groupNamePlaceholder": "e.g., Work, Personal, Shopping",
+    "groupUpdatedSuccess": "Group updated successfully!",
+    "groupCreatedSuccess": "Group created successfully!",
+    "groupErrorSaving": "Error saving group. Please try again."
+  },
+  "tags": {
+    "manageTags": "Manage Tags"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -56,5 +97,15 @@
     "statistics": "Statistics",
     "recentActivity": "Recent Activity",
     "quickActions": "Quick Actions"
+  },
+  "NedaBubbleGroup": {
+    "taskCount": "{count} tasks",
+    "completedCount": "✓ {count} completed"
+  },
+  "settings": {
+    "settings": "Settings",
+    "theme": "Theme",
+    "settingsUpdateSuccess": "Settings updated successfully!",
+    "settingsUpdateError": "Error updating settings. Please try again."
   }
 }

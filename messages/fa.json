@@ -61,7 +61,23 @@
     "setDueDate": "تعیین تاریخ سررسید",
     "overdue": "گذشته از موعد",
     "dueToday": "امروز سررسید",
-    "dueTomorrow": "فردا سررسید"
+    "dueTomorrow": "فردا سررسید",
+    "newTaskWithAiDescription": "Describe your task and let AI help you organize and prioritize.",
+    "editTaskDescription": "Update the details of your existing task.",
+    "titlePlaceholder": "e.g., Schedule a meeting with the team",
+    "descriptionPlaceholder": "e.g., Discuss project milestones and next steps",
+    "selectDate": "Select a date",
+    "aiSettingsLabel": "AI Enhancements",
+    "aiRankingLabel": "AI-Powered Prioritization",
+    "aiRankingDescription": "Let AI analyze and suggest task priority.",
+    "aiSubtasksLabel": "AI-Generated Subtasks",
+    "aiSubtasksDescription": "Let AI break down this task into smaller subtasks.",
+    "aiWillProcessTask": "AI will process this task upon creation for enhancements.",
+    "taskUpdatedSuccess": "Task updated successfully!",
+    "taskCreatedSuccess": "Task created successfully!",
+    "taskErrorSaving": "Error saving task. Please try again.",
+    "taskUpdateError": "خطا در به‌روزرسانی وظیفه. لطفاً دوباره تلاش کنید.",
+    "archivedTasksTitle": "وظایف آرشیو شده"
   },
   "groups": {
     "createGroup": "ایجاد گروه",
@@ -69,13 +85,23 @@
     "groupName": "نام گروه",
     "groupColor": "رنگ گروه",
     "groupEmoji": "ایموجی گروه",
+    "selectGroupPlaceholder": "Select a group (optional)",
     "editGroup": "ویرایش گروه",
     "updateGroup": "به‌روزرسانی گروه",
     "deleteGroup": "حذف گروه",
     "noGroups": "هیچ گروهی وجود ندارد",
     "ungrouped": "بدون گروه",
     "moveToGroup": "انتقال به گروه",
-    "removeFromGroup": "حذف از گروه"
+    "removeFromGroup": "حذف از گروه",
+    "editGroupTitle": "ویرایش گروه",
+    "newGroupTitle": "ایجاد گروه جدید",
+    "editGroupDescription": "نام گروه خود را ویرایش کنید.",
+    "newGroupDescription": "یک گروه جدید برای سازماندهی وظایف خود ایجاد کنید.",
+    "groupNameLabel": "نام گروه",
+    "groupNamePlaceholder": "مثال: کار، شخصی، خرید",
+    "groupUpdatedSuccess": "گروه با موفقیت به‌روزرسانی شد!",
+    "groupCreatedSuccess": "گروه با موفقیت ایجاد شد!",
+    "groupErrorSaving": "خطا در ذخیره گروه. لطفاً دوباره تلاش کنید."
   },
   "tags": {
     "addTag": "افزودن برچسب",
@@ -162,7 +188,9 @@
     "removeApiKey": "حذف کلید API",
     "dangerZone": "منطقه خطرناک",
     "deleteAccount": "حذف حساب کاربری",
-    "deleteAccountWarning": "این عمل غیرقابل بازگشت است"
+    "deleteAccountWarning": "این عمل غیرقابل بازگشت است",
+    "settingsUpdateSuccess": "تنظیمات با موفقیت به‌روزرسانی شد",
+    "settingsUpdateError": "خطا در به‌روزرسانی تنظیمات"
   },
   "stats": {
     "statistics": "آمار",
@@ -203,7 +231,8 @@
     "export": "خروجی",
     "import": "ورودی",
     "refresh": "به‌روزرسانی",
-    "retry": "تلاش مجدد"
+    "retry": "تلاش مجدد",
+    "errorSubmittingForm": "Error submitting form. Please try again."
   },
   "toast": {
     "taskAdded": "وظیفه با موفقیت اضافه شد",
@@ -242,5 +271,9 @@
     "activeUsers": "کاربران فعال",
     "totalApiCalls": "کل فراخوانی‌های API",
     "systemHealth": "سلامت سیستم"
+  },
+  "NedaBubbleGroup": {
+    "taskCount": "{count} وظیفه",
+    "completedCount": "✓ {count} تکمیل"
   }
 }

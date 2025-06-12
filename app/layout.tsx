@@ -3,8 +3,8 @@ import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme/theme-provider"
-import { AuthProvider } from "@/components/auth/auth-provider"
-import { Toaster } from "@/components/ui/toaster"
+// import { AuthProvider } from "@/components/auth/auth-provider" // Removed AuthProvider import
+import { Toaster } from "@/components/ui/sonner" // Updated import path for Toaster
 import { ErrorBoundary } from "@/components/core/ErrorBoundary"
 import { CommandPalette } from "@/components/core/CommandPalette"
 import { LevelUpNotification } from "@/components/gamification/LevelUpNotification"
@@ -68,23 +68,23 @@ export default function RootLayout({
       </head>
       <body className={inter.className} suppressHydrationWarning>
         <ErrorBoundary>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-            <AuthProvider>
-              <div className="relative min-h-screen">
-                {/* Theme Backgrounds */}
-                <div id="theme-background" className="fixed inset-0 -z-10" />
+          {/* Use the refactored ThemeProvider with its expected props */}
+          <ThemeProvider defaultTheme="light" storageKey="auratask-theme">
+            {/* AuthProvider wrapper removed */}
+            <div className="relative min-h-screen">
+              {/* Theme Backgrounds */}
+              <div id="theme-background" className="fixed inset-0 -z-10" />
 
-                {/* Main Content */}
-                <main className="relative z-10">{children}</main>
+              {/* Main Content */}
+              <main className="relative z-10">{children}</main>
 
-                {/* Global Components */}
-                <CommandPalette />
-                <LevelUpNotification />
-                <AchievementUnlockNotification />
-                <AuraNotification />
-                <Toaster />
-              </div>
-            </AuthProvider>
+              {/* Global Components */}
+              <CommandPalette />
+              <LevelUpNotification />
+              <AchievementUnlockNotification />
+              <AuraNotification />
+              <Toaster />
+            </div>
           </ThemeProvider>
         </ErrorBoundary>
       </body>

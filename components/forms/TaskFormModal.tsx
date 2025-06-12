@@ -18,7 +18,8 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Loader2, CalendarIcon, Sparkles, X, Brain, Target } from "lucide-react"
 import { format } from "date-fns"
-import { fa } from "date-fns/locale"
+// import { fa } from "date-fns/locale" // Removed Farsi locale for date-fns
+import { toast as sonnerToast } from "sonner"
 
 export function TaskFormModal() {
   const t = useTranslations()
@@ -98,13 +99,16 @@ export function TaskFormModal() {
 
       if (editingTask) {
         await updateTask(editingTask.id, taskData)
+        sonnerToast.success(t("tasks.taskUpdatedSuccess"))
       } else {
         await addTask(taskData)
+        sonnerToast.success(t("tasks.taskCreatedSuccess"))
       }
 
       closeTaskForm()
     } catch (error) {
       console.error("Error saving task:", error)
+      sonnerToast.error(t("tasks.taskErrorSaving"))
     } finally {
       setLoading(false)
     }
@@ -174,7 +178,7 @@ export function TaskFormModal() {
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start text-left font-normal">
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dueDate ? format(dueDate, "PPP", { locale: fa }) : t("tasks.selectDate")}
+                    {dueDate ? format(dueDate, "PPP") : t("tasks.selectDate")}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">

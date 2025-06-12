@@ -12,7 +12,8 @@ import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
-import { useToast } from "@/hooks/use-toast"
+// import { useToast } from "@/hooks/use-toast" // Removed useToast
+import { toast as sonnerToast } from "sonner" // Import sonner
 import { LogOut, Palette, Brain, User } from "lucide-react"
 
 interface SettingsPanelProps {
@@ -22,7 +23,7 @@ interface SettingsPanelProps {
 
 export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
   const t = useTranslations()
-  const { toast } = useToast()
+  // const { toast } = useToast() // Removed useToast initialization
   const { user, setUser } = useAppStore()
   const { theme, setTheme } = useTheme()
   const [loading, setLoading] = useState(false)
@@ -46,17 +47,10 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
       if (error) throw error
 
       setUser({ ...user, ...updates })
-      toast({
-        title: t("common.success"),
-        description: "تنظیمات با موفقیت به‌روزرسانی شد",
-      })
+      sonnerToast.success(t("settings.settingsUpdateSuccess"))
     } catch (error) {
       console.error("Error updating settings:", error)
-      toast({
-        title: t("common.error"),
-        description: "خطا در به‌روزرسانی تنظیمات",
-        variant: "destructive",
-      })
+      sonnerToast.error(t("settings.settingsUpdateError"))
     } finally {
       setLoading(false)
     }
