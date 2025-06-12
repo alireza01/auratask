@@ -3,7 +3,7 @@ import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme/theme-provider"
-import { AuthProvider } from "@/components/auth/auth-provider"
+import { AuthProvider } from "@/components/auth/AuthProvider"
 import { Toaster } from "@/components/ui/toaster"
 import { ErrorBoundary } from "@/components/core/ErrorBoundary"
 import { CommandPalette } from "@/components/core/CommandPalette"
@@ -17,7 +17,6 @@ export const metadata: Metadata = {
   title: "AuraTask - Smart Task Management",
   description: "AI-powered task management with gamification",
   manifest: "/manifest.json",
-  themeColor: "#000000",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

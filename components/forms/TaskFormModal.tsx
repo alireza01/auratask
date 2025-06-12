@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Loader2, CalendarIcon, Sparkles, X, Brain, Target } from "lucide-react"
 import { format } from "date-fns"
-import { fa } from "date-fns/locale"
+import { fa } from "date-fns/locale/fa"
 
 export function TaskFormModal() {
   const t = useTranslations()
