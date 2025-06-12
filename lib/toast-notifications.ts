@@ -57,19 +57,24 @@ const getIconComponent = (iconName: string): LucideIcon | ComponentType<any> => 
 };
 
 
-export function showAuraAwardToast(points: number, reason: string) {
+export function showAuraAwardToast(
+  points: number,
+  reason: string,
+  tAuraAwardTitle: string,
+  tCloseButtonLabel: string,
+) {
   triggerHapticFeedback(HapticFeedbackType.Success);
   toast.custom((t) => (
     <div className="p-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-xl rounded-lg flex items-center gap-4 border border-purple-700">
       <Sparkles className="w-7 h-7 text-yellow-300 flex-shrink-0" />
       <div className="flex-grow">
-        <p className="font-bold text-lg">+{points} آئورا!</p>
+        <p className="font-bold text-lg">{tAuraAwardTitle.replace("{points}", points.toString())}</p>
         <p className="text-sm opacity-90">{reason}</p>
       </div>
       <button
         onClick={() => toast.dismiss(t)}
         className="ml-auto p-1 rounded-full hover:bg-white/20 transition-colors text-sm"
-        aria-label="بستن"
+        aria-label={tCloseButtonLabel}
       >
         ✕
       </button>
@@ -77,7 +82,13 @@ export function showAuraAwardToast(points: number, reason: string) {
   ), { duration: 3000 });
 }
 
-export function showLevelUpToast(newLevel: number) {
+export function showLevelUpToast(
+  newLevel: number,
+  tLevelUpTitle: string,
+  tKeepGrowing: string,
+  tContinueButton: string,
+  // tCloseButtonLabel: string // This toast doesn't have a '✕' button, dismissed by action or timeout
+) {
   triggerHapticFeedback(HapticFeedbackType.LevelUp);
   toast.custom((t) => (
     <div className="p-6 max-w-sm mx-auto bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white rounded-xl shadow-2xl text-center relative overflow-hidden">
@@ -87,26 +98,43 @@ export function showLevelUpToast(newLevel: number) {
         <div className="flex justify-center mb-3">
           <Crown className="w-16 h-16 text-yellow-400 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]" />
         </div>
-        <h1 className="text-3xl font-bold mb-2">تبریک! سطح شما بالا رفت!</h1>
+        <h1 className="text-3xl font-bold mb-2">{tLevelUpTitle}</h1>
         <div className="text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-orange-400 mb-3 drop-shadow-[0_2px_2px_rgba(0,0,0,0.3)]">
           {newLevel}
         </div>
-        <p className="text-md opacity-90">به رشد خود ادامه دهید!</p>
+        <p className="text-md opacity-90">{tKeepGrowing}</p>
          <button
             onClick={() => toast.dismiss(t)}
             className="mt-4 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-semibold transition-colors"
           >
-            ادامه
+            {tContinueButton}
           </button>
       </div>
     </div>
   ), { duration: 6000, position: 'top-center' });
 }
 
-export function showAchievementUnlockedToast(achievement: Achievement) {
+export function showAchievementUnlockedToast(
+  achievement: Achievement,
+  tPointsAwarded: string,
+  tRarityCommon: string,
+  tRarityRare: string,
+  tRarityEpic: string,
+  tRarityLegendary: string,
+  tCloseButtonLabel: string,
+) {
   triggerHapticFeedback(HapticFeedbackType.Achievement);
   const rarityStyles = getRarityStyles(achievement.rarity);
   const IconComponent = getIconComponent(achievement.icon_name);
+
+  let translatedRarity = '';
+  switch (achievement.rarity) {
+    case 'common': translatedRarity = tRarityCommon; break;
+    case 'rare': translatedRarity = tRarityRare; break;
+    case 'epic': translatedRarity = tRarityEpic; break;
+    case 'legendary': translatedRarity = tRarityLegendary; break;
+    default: translatedRarity = achievement.rarity; // fallback
+  }
 
   toast.custom((t) => (
     <div
@@ -123,18 +151,20 @@ export function showAchievementUnlockedToast(achievement: Achievement) {
       <div className="flex-grow">
         <h3 className="font-bold text-md" style={{color: rarityStyles.textColor}}>{achievement.description}</h3>
         <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">{achievement.name}</p>
-        <p className="text-sm font-semibold text-green-500 mb-2">+{achievement.reward_points} امتیاز آئورا</p>
+        <p className="text-sm font-semibold text-green-500 mb-2">
+          {tPointsAwarded.replace("{reward_points}", achievement.reward_points.toString())}
+        </p>
         <span
           className={`text-xs px-3 py-1 rounded-full border font-medium`}
           style={{ borderColor: rarityStyles.borderColor, color: rarityStyles.textColor, backgroundColor: rarityStyles.backgroundColor }}
         >
-          {achievement.rarity.charAt(0).toUpperCase() + achievement.rarity.slice(1)}
+          {translatedRarity}
         </span>
       </div>
       <button
         onClick={() => toast.dismiss(t)}
         className="ml-auto p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/20 transition-colors text-sm flex-shrink-0"
-        aria-label="بستن"
+        aria-label={tCloseButtonLabel}
       >
         ✕
       </button>

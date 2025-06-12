@@ -4,6 +4,7 @@ import { useState, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import type { Task, TaskGroup } from "@/types"
 import { useAppStore } from "@/lib/store"
+import { useTranslations } from "next-intl"
 import { Badge } from "@/components/ui/badge"
 import { Trash2, Database, Zap } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -209,6 +210,7 @@ interface AlirezaDataBlockGroupProps {
 
 export function AlirezaDataBlockGroup({ groups, tasks, onGroupClick }: AlirezaDataBlockGroupProps) {
   const { deleteGroup } = useAppStore()
+  const t = useTranslations("storeActions")
 
   const groupedTasks = groups.map((group) => ({
     ...group,
@@ -223,7 +225,11 @@ export function AlirezaDataBlockGroup({ groups, tasks, onGroupClick }: AlirezaDa
             key={group.id}
             group={group}
             tasks={group.tasks}
-            onDelete={() => deleteGroup(group.id)}
+            onDelete={() => {
+              const tSuccess = t("deleteGroupSuccess")
+              const tError = t("deleteGroupError")
+              deleteGroup(group.id, tSuccess, tError)
+            }}
             onClick={() => onGroupClick(group.id)}
           />
         ))}
