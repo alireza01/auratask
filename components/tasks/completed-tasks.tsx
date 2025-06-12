@@ -7,7 +7,7 @@ import { Archive, ChevronDown, ChevronUp } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useTranslations } from "next-intl"
 
-export function ArchivedTasks() {
+export function CompletedTasks() {
   const t = useTranslations("tasks")
   const tasks = useAppStore((state) => state.tasks)
   const [isOpen, setIsOpen] = useState(false)

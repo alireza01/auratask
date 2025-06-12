@@ -59,12 +59,12 @@ interface AppState {
   addSubtask: (taskId: string, subtaskTitle: string) => Promise<void>
   updateSubtask: (subtaskId: string, updates: Partial<Subtask>) => Promise<void>
   deleteSubtask: (subtaskId: string) => Promise<void>
-  toggleSubtaskComplete: (subtaskId: string) => Promise<void>
+  toggleSubtaskComplete: (subtaskId: string, tSubtaskCompletionReason: string, tAuraAwardTitle: string, tCloseButtonLabel: string) => Promise<void>
 
   // Group Actions
   addGroup: (group: Omit<TaskGroup, "id" | "created_at" | "updated_at">) => Promise<void>
   updateGroup: (groupId: string, updates: Partial<TaskGroup>) => Promise<void>
-  deleteGroup: (groupId: string) => Promise<void>
+  deleteGroup: (groupId: string, tSuccess: string, tError: string) => Promise<void>
   reorderGroups: (reorderedGroups: TaskGroup[]) => Promise<void>
 
   // Tag Actions
@@ -94,7 +94,7 @@ interface AppState {
   updateUsername: (username: string) => Promise<void>
 
   // Gamification Actions
-  awardAura: (points: number, reason: string) => Promise<void>
+  awardAura: (points: number, reasonKey: string, tAuraAwardTitle: string, tCloseButtonLabel: string, tReason?: string) => Promise<void>
   // clearAuraReward: () => void // To be removed later - REMOVING NOW
   setJustLeveledUpTo: (level: number | null) => void // New action
   setNewlyUnlockedAchievement: (achievement: Achievement | null) => void // New action
@@ -607,7 +607,7 @@ export const useAppStore = create<AppState>()(
           }
         },
 
-        toggleSubtaskComplete: async (subtaskId) => {
+        toggleSubtaskComplete: async (subtaskId, tSubtaskCompletionReason, tAuraAwardTitle, tCloseButtonLabel) => {
           // Find the subtask
           let subtask = null
           let parentTask = null
@@ -647,7 +647,7 @@ export const useAppStore = create<AppState>()(
 
             // Award aura points for completing subtask
             if (updates.is_completed) {
-              await get().awardAura(5, "تکمیل زیروظیفه")
+              await get().awardAura(5, "subtaskCompletionReason", tAuraAwardTitle, tCloseButtonLabel, tSubtaskCompletionReason)
             }
           } catch (error) {
             console.error("Error toggling subtask completion:", error)
@@ -735,10 +735,10 @@ export const useAppStore = create<AppState>()(
 
             if (error) throw error
 
-            toast.success("گروه با موفقیت حذف شد")
+            toast.success(tSuccess)
           } catch (error) {
             console.error("Error deleting group:", error)
-            toast.error("خطا در حذف گروه")
+            toast.error(tError)
             // Revert optimistic update
             get().fetchInitialData()
           }
@@ -1032,7 +1032,7 @@ export const useAppStore = create<AppState>()(
         },
 
         // Gamification Actions
-        awardAura: async (points, reason) => {
+        awardAura: async (points, reasonKey, tAuraAwardTitle, tCloseButtonLabel, tReason) => {
           const { user, settings } = get()
           if (!user || !settings) return
 
@@ -1064,7 +1064,7 @@ export const useAppStore = create<AppState>()(
             // or by listeners if other mechanisms update levels.
             // No setJustLeveledUpTo(newLevelFromAwardAura) call here.
 
-            showAuraAwardToast(points, reason)
+            showAuraAwardToast(points, tReason || reasonKey, tAuraAwardTitle, tCloseButtonLabel)
           } catch (error) {
             console.error("Error awarding aura:", error)
             toast.error("خطا در ثبت امتیاز آئورا"); // Keep error toast for aura point update failure

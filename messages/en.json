@@ -60,5 +60,82 @@
   "settings": {
     "hapticFeedback": "Haptic Feedback",
     "hapticFeedbackDescription": "Enable vibrations for notifications on mobile."
+  },
+  "admin": {
+    "title": "Admin Panel",
+    "description": "Monitor and manage the AuraTask system",
+    "totalUsers": "Total Users",
+    "activeUsers": "active users (last 30 days)",
+    "totalTasks": "Total Tasks",
+    "registeredInSystem": "registered in the system",
+    "aiUsage": "AI Usage",
+    "aiTasks": "AI tasks",
+    "apiKeys": "API Keys",
+    "active": "active",
+    "analytics": "Analytics",
+    "logs": "Logs",
+    "userGrowth30Days": "User Growth (last 30 days)",
+    "taskStats30Days": "Task Stats (last 30 days)",
+    "created": "Created",
+    "completed": "Completed",
+    "systemLogs": "System Logs",
+    "systemEventsErrors": "Important system events and errors",
+    "details": "Details",
+    "manageApiKeys": "Manage API Keys",
+    "manageApiKeysDescription": "Manage Gemini API keys to support users",
+    "loading": "Loading..."
+  },
+  "leaderboard": {
+    "level": "Level {level}",
+    "auraPoints": "Aura Points",
+    "streakDays": "🔥 {streak} days",
+    "you": "(You)",
+    "yourRank": "Your Rank: #{rank}",
+    "points": "{points} Points",
+    "shareTitle": "AuraTask Leaderboard",
+    "shareText": "See who's leading the way in AuraTask!",
+    "errorLoading": "Error loading leaderboard",
+    "retry": "Retry",
+    "pageTitle": "🏆 Leaderboard",
+    "pageSubtitle": "Top users by Aura Points",
+    "activeUsers": "{count}+ active users",
+    "share": "Share",
+    "podiumTitle": "🥇 Hall of Fame",
+    "fullRanking": "Full Ranking",
+    "loadingMore": "Loading...",
+    "showMore": "Show More",
+    "usernameFallback": "{username}"
+  },
+  "usernameModal": {
+    "toastErrorMinLength": "Username must be at least 3 characters long",
+    "title": "Choose Username",
+    "description": "To participate in the leaderboard, please choose your username.",
+    "label": "Username",
+    "placeholder": "Unique username",
+    "helperText": "3 to 15 characters, letters, numbers, and hyphens only",
+    "submitButton": "Confirm",
+    "cancelButton": "Later"
+  },
+  "taskGroupsBubbles": {
+    "title": "Task Groups",
+    "newGroupButton": "New Group",
+    "ungroupedTasksTitle": "Ungrouped Tasks"
+  },
+  "toastNotifications": {
+    "auraAwardTitle": "+{points} Aura!",
+    "closeButtonLabel": "Close",
+    "levelUpTitle": "Congratulations! You've leveled up!",
+    "levelUpKeepGrowing": "Keep up the great work!",
+    "levelUpContinueButton": "Continue",
+    "achievementPointsAwarded": "+{reward_points} Aura Points",
+    "rarityCommon": "Common",
+    "rarityRare": "Rare",
+    "rarityEpic": "Epic",
+    "rarityLegendary": "Legendary",
+    "subtaskCompletionReason": "Subtask completed"
+  },
+  "storeActions": {
+    "deleteGroupSuccess": "Group deleted successfully",
+    "deleteGroupError": "Error deleting group"
   }
 }
