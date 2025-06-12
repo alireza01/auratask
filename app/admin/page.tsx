@@ -92,9 +92,9 @@ export default function AdminPage() {
       setStats({
         totalUsers: userCount?.[0]?.count || 0,
         activeUsers: activeUserCount?.[0]?.count || 0,
-        totalTasks: aiStats?.[0]?.total_tasks || 0,
-        aiTasks: aiStats?.[0]?.total_ai_tasks || 0,
-        aiPercentage: aiStats?.[0]?.ai_percentage || 0,
+        totalTasks: (aiStats as any)?.[0]?.total_tasks || 0,
+        aiTasks: (aiStats as any)?.[0]?.total_ai_tasks || 0,
+        aiPercentage: (aiStats as any)?.[0]?.ai_percentage || 0,
       })
 
       setUserGrowth(userGrowthData || [])
@@ -322,3 +322,4 @@ export default function AdminPage() {
     </div>
   )
 }
+
