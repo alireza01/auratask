@@ -11,7 +11,7 @@ import { Trophy, Medal, Award, Crown, Share2, Users, TrendingUp } from "lucide-r
 import { LeaderboardSkeleton } from "@/components/core/LeaderboardSkeleton"
 import { createClient } from "@/lib/supabase-client"
 import { useAppStore } from "@/lib/store"
-import { useTheme } from "@/components/theme/theme-provider"
+import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
 
 interface LeaderboardUser {

@@ -6,6 +6,7 @@ import { useState } from "react"
 import { useTranslations } from "next-intl"
 import { useAppStore } from "@/lib/store"
 import { supabase } from "@/lib/supabase-client"
+import { generateGroupEmoji } from "@/lib/ai-utils";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -42,13 +43,14 @@ export function GroupFormModal({ open, onOpenChange, group }: GroupFormModalProp
         updateGroup(group.id, { name: name.trim() })
       } else {
         // Create new group
+        const emoji = await generateGroupEmoji(name.trim(), "#BCA9F0", user!.id); // Assuming a default color or add color selection later
         const { data, error } = await supabase
           .from("task_groups")
           .insert([
             {
               user_id: user!.id,
               name: name.trim(),
-              emoji: "📁",
+              emoji: emoji,
             },
           ])
           .select()

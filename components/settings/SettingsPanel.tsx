@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useTranslations } from "next-intl"
 import { useAppStore } from "@/lib/store"
-import { useTheme } from "@/components/theme/theme-provider"
+import { useTheme } from "next-themes"
 import { supabase } from "@/lib/supabase-client"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
@@ -13,7 +13,9 @@ import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
-import { LogOut, Palette, Brain, User } from "lucide-react"
+import { LogOut, Palette, Brain, User, Trophy, Settings } from "lucide-react" // Added Trophy and Settings
+import { AchievementsPanel } from "@/components/gamification/AchievementsPanel";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface SettingsPanelProps {
   open: boolean
@@ -69,19 +71,31 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[400px] sm:w-[540px]">
+      <SheetContent className="w-[400px] sm:w-[540px] flex flex-col"> {/* Added flex flex-col for Tabs to grow */}
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            <User className="w-5 h-5" />
+            <User className="w-5 h-5" /> {/* Existing icon */}
             {t("settings.settings")}
           </SheetTitle>
           <SheetDescription>تنظیمات حساب کاربری و شخی‌سازی برنامه</SheetDescription>
         </SheetHeader>
 
-        <div className="space-y-6 py-6">
-          {/* Theme Settings */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
+        <Tabs defaultValue="settings" className="flex-1 flex flex-col min-h-0 py-6"> {/* Modified to take space and enable scrolling on content */}
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="settings">
+              <Settings className="w-4 h-4 mr-2" />
+              Settings
+            </TabsTrigger>
+            <TabsTrigger value="achievements">
+              <Trophy className="w-4 h-4 mr-2" />
+              Achievements
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="settings" className="space-y-6 py-6 flex-1 overflow-y-auto"> {/* Added flex-1 and overflow for scrolling */}
+            {/* All existing settings sections (Theme, AI, API Key, Account) go here unchanged */}
+            {/* Example for Theme section (ensure all others follow): */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
               <Palette className="w-4 h-4" />
               <Label className="text-base font-medium">{t("settings.theme")}</Label>
             </div>
@@ -198,7 +212,11 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
               </Button>
             </div>
           </div>
-        </div>
+          </TabsContent>
+          <TabsContent value="achievements" className="flex-1 overflow-y-auto py-6"> {/* Added flex-1 and overflow for scrolling */}
+            <AchievementsPanel />
+          </TabsContent>
+        </Tabs>
       </SheetContent>
     </Sheet>
   )
