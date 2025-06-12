@@ -3,6 +3,7 @@ import { devtools, persist } from "zustand/middleware"
 import type { User, Task, TaskGroup, Tag, UserSettings, TaskFilters, Subtask } from "@/types"
 import { supabase } from "./supabase-client"
 import { toast } from "sonner"
+import { showAuraAwardToast } from "./toast-notifications" // Added import
 
 interface AuraReward {
   points: number
@@ -36,7 +37,8 @@ interface AppState {
   darkMode: boolean
 
   // Gamification State
-  lastAuraReward: AuraReward | null
+  justLeveledUpTo: number | null // New state for level up toast
+  newlyUnlockedAchievement: Achievement | null // New state for achievement toast
 
   // Actions
   setUser: (user: User | null) => void
@@ -96,8 +98,13 @@ interface AppState {
 
   // Gamification Actions
   awardAura: (points: number, reason: string) => Promise<void>
-  clearAuraReward: () => void
+  // clearAuraReward: () => void // To be removed later - REMOVING NOW
+  setJustLeveledUpTo: (level: number | null) => void // New action
+  setNewlyUnlockedAchievement: (achievement: Achievement | null) => void // New action
 }
+
+// Import Achievement type for the new state
+import type { Achievement } from "./toast-notifications"
 
 const initialFilters: TaskFilters = {
   searchQuery: "",
@@ -135,7 +142,8 @@ export const useAppStore = create<AppState>()(
         editingGroup: null,
         editingTag: null,
         darkMode: false,
-        lastAuraReward: null,
+        justLeveledUpTo: null, // Initialize new state
+        newlyUnlockedAchievement: null, // Initialize new state
 
         // Basic Setters
         setUser: (user) => set({ user }),
@@ -179,7 +187,7 @@ export const useAppStore = create<AppState>()(
                   group:groups(*)
                 `)
                 .match(queryConditions)
-                .order("created_at"),
+                .order("order_index", { ascending: true, nullsFirst: false }), // Updated order
               supabase.from("groups").select("*").match(queryConditions).order("created_at"),
               supabase.from("tags").select("*").match(queryConditions),
               userId
@@ -265,7 +273,7 @@ export const useAppStore = create<AppState>()(
                 group:groups(*)
               `)
               .match(queryConditions)
-              .order("created_at")
+              .order("order_index", { ascending: true, nullsFirst: false }) // Updated order
 
             if (error) throw error
 
@@ -351,10 +359,16 @@ export const useAppStore = create<AppState>()(
 
         // Task Actions
         addTask: async (taskData) => {
-          const { user, guestId } = get()
+          const { user, guestId, tasks: currentTasks } = get() // Added tasks to get current list
 
           try {
-            const insertData = user?.id ? { ...taskData, user_id: user.id } : { ...taskData, guest_id: guestId }
+            // Calculate new order_index
+            const maxOrderIndex = currentTasks.reduce((max, t) => Math.max(max, t.order_index || 0), 0)
+            const newOrderIndex = maxOrderIndex + 10000
+
+            const insertData = user?.id
+              ? { ...taskData, user_id: user.id, order_index: newOrderIndex }
+              : { ...taskData, guest_id: guestId, order_index: newOrderIndex }
 
             const { data, error } = await supabase
               .from("tasks")
@@ -369,7 +383,8 @@ export const useAppStore = create<AppState>()(
             if (error) throw error
 
             set((state) => ({
-              tasks: [...state.tasks, { ...data, tags: [] }],
+              // Ensure tasks are sorted by order_index after adding
+              tasks: [...state.tasks, { ...data, tags: [] }].sort((a,b) => (a.order_index || 0) - (b.order_index || 0)),
             }))
 
             toast.success("وظیفه با موفقیت اضافه شد")
@@ -460,24 +475,31 @@ export const useAppStore = create<AppState>()(
           }
         },
 
-        reorderTasks: async (reorderedTasks) => {
-          // Optimistic update
-          set({ tasks: reorderedTasks })
+        reorderTasks: async (reorderedTasksFromUI: Task[]) => {
+          // Assign new order_index values with a large step
+          const updates = reorderedTasksFromUI.map((task, index) => ({
+            id: task.id,
+            order_index: (index + 1) * 10000, // Simple re-spacing
+          }));
+
+          // Create the new local state with these spaced indices
+          const newTasksState = reorderedTasksFromUI.map((task, index) => ({
+            ...task,
+            order_index: (index + 1) * 10000,
+          }));
+
+          // Optimistic update: set the state with the new order, already sorted by UI.
+          // The .sort() in fetch/refresh will handle DB consistency if this fails.
+          set({ tasks: newTasksState });
 
           try {
-            const updates = reorderedTasks.map((task, index) => ({
-              id: task.id,
-              order_index: index,
-            }))
-
-            const { error } = await supabase.from("tasks").upsert(updates)
-
-            if (error) throw error
+            const { error } = await supabase.from("tasks").upsert(updates);
+            if (error) throw error;
+            // Optional: toast.success("ترتیب وظایف ذخیره شد");
           } catch (error) {
-            console.error("Error reordering tasks:", error)
-            toast.error("خطا در ذخیره ترتیب وظایف")
-            // Revert optimistic update
-            get().refreshTasks()
+            console.error("Error reordering tasks:", error);
+            toast.error("خطا در ذخیره ترتیب وظایف");
+            get().refreshTasks(); // Revert
           }
         },
 
@@ -1013,18 +1035,29 @@ export const useAppStore = create<AppState>()(
 
         // Gamification Actions
         awardAura: async (points, reason) => {
-          const { user, settings } = get()
+          const { user, settings, setJustLeveledUpTo } = get() // Add setJustLeveledUpTo
           if (!user || !settings) return
 
           try {
-            const newPoints = (settings.aura_points || 0) + points
-            const newLevel = Math.floor(newPoints / 100) + 1
+            const originalLevel = settings.level || 1
+            const newAuraPoints = (settings.aura_points || 0) + points
+            // Level calculation logic might be more complex if using a formula like in check_level_up
+            // For now, let's assume a simple 100 points per level for client-side prediction
+            // Or, better, let check_level_up handle the authoritative level update.
+            // However, awardAura currently updates level directly.
+            // We need to ensure this aligns with how check_level_up would calculate it, or rely on check_level_up.
+            // For this subtask, we'll react to the level change made by awardAura itself.
+            const newPredictedLevel = Math.floor(newAuraPoints / (settings.level_up_xp_threshold || 100)) + (settings.level_up_xp_threshold ? 0 : 1) // Simplified: this needs to be robust
+                                      // A better approach: awardAura updates points, then call an RPC to check level and get new level state.
+                                      // For now, use the level already calculated by awardAura.
+
+            const newLevelFromAwardAura = Math.floor(newAuraPoints / 100) + 1 // This is the current simple logic in awardAura
 
             const { error } = await supabase
               .from("user_settings")
               .update({
-                aura_points: newPoints,
-                level: newLevel,
+                aura_points: newAuraPoints,
+                level: newLevelFromAwardAura, // Using the level calculated by awardAura
               })
               .eq("id", user.id)
 
@@ -1035,18 +1068,27 @@ export const useAppStore = create<AppState>()(
               settings: state.settings
                 ? {
                     ...state.settings,
-                    aura_points: newPoints,
-                    level: newLevel,
+                    aura_points: newAuraPoints,
+                    level: newLevelFromAwardAura,
                   }
                 : null,
-              lastAuraReward: { points, reason, timestamp: Date.now() },
             }))
+
+            if (newLevelFromAwardAura > originalLevel) {
+              setJustLeveledUpTo(newLevelFromAwardAura)
+            }
+
+            showAuraAwardToast(points, reason)
           } catch (error) {
             console.error("Error awarding aura:", error)
+            // Potentially show an error toast here if awarding aura itself fails critically
+            // toast.error("خطا در ثبت امتیاز آئورا");
           }
         },
 
-        clearAuraReward: () => set({ lastAuraReward: null }),
+        // clearAuraReward: () => set({ /* lastAuraReward: null */ }), // REMOVING NOW
+        setJustLeveledUpTo: (level) => set({ justLeveledUpTo: level }),
+        setNewlyUnlockedAchievement: (achievement) => set({ newlyUnlockedAchievement: achievement }),
       }),
       {
         name: "auratask-store",

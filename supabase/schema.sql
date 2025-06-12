@@ -43,6 +43,18 @@ ALTER TABLE public.user_settings ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their own settings" ON public.user_settings FOR ALL USING (auth.uid() = id);
 CREATE POLICY "Allow authenticated users to view leaderboard data" ON public.user_settings FOR SELECT USING (auth.role() = 'authenticated');
 
+-- TABLE: user_roles
+CREATE TABLE public.user_roles (
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    role TEXT NOT NULL CHECK (role IN ('admin', 'editor', 'moderator')), -- Added 'moderator' as per prompt example
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT user_roles_user_id_role_key UNIQUE (user_id, role)
+);
+ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Admins can manage user roles" ON public.user_roles FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "Users can view their own roles" ON public.user_roles FOR SELECT USING (auth.uid() = user_id);
+
 -- FUNCTION: create_user_profile_and_settings()
 CREATE OR REPLACE FUNCTION public.create_user_profile_and_settings()
 RETURNS TRIGGER AS $$
@@ -69,8 +81,8 @@ CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS boolean AS $$
 BEGIN
   RETURN EXISTS (
-    SELECT 1 FROM public.user_settings 
-    WHERE id = auth.uid() AND username = 'admin'
+    SELECT 1 FROM public.user_roles
+    WHERE user_id = auth.uid() AND role = 'admin'
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -153,6 +165,7 @@ CREATE TABLE public.tasks (
     enable_ai_ranking boolean NOT NULL DEFAULT true,
     enable_ai_subtasks boolean NOT NULL DEFAULT true,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
+    order_index DOUBLE PRECISION DEFAULT NULL,
     CONSTRAINT tasks_user_or_guest CHECK ((user_id IS NOT NULL AND guest_id IS NULL) OR (user_id IS NULL AND guest_id IS NOT NULL))
 );
 ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
@@ -198,29 +211,44 @@ CREATE TABLE IF NOT EXISTS public.achievements (
     reward_points integer NOT NULL DEFAULT 0,
     category text NOT NULL DEFAULT 'general',
     rarity text NOT NULL DEFAULT 'common' CHECK (rarity IN ('common', 'rare', 'epic', 'legendary')),
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    -- New columns
+    required_tasks_completed INTEGER DEFAULT NULL,
+    required_streak_days INTEGER DEFAULT NULL,
+    required_level INTEGER DEFAULT NULL,
+    unlock_condition_type TEXT DEFAULT NULL -- e.g., 'TASKS_COMPLETED', 'STREAK_DAYS', 'LEVEL_REACHED', 'CUSTOM'
 );
 ALTER TABLE public.achievements ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Anyone can view achievements" ON public.achievements FOR SELECT USING (true);
 
 -- Insert default achievements
-INSERT INTO public.achievements (name, description, icon_name, reward_points, category, rarity) VALUES
-('first_task', 'اولین وظیفه', 'Trophy', 50, 'tasks', 'common'),
-('task_novice', 'تازه‌کار وظایف', 'Target', 100, 'tasks', 'common'),
-('task_apprentice', 'شاگرد وظایف', 'Award', 200, 'tasks', 'rare'),
-('task_expert', 'متخصص وظایف', 'Crown', 500, 'tasks', 'epic'),
-('task_master', 'استاد وظایف', 'Gem', 1000, 'tasks', 'legendary'),
-('streak_starter', 'شروع‌کننده', 'Flame', 150, 'streaks', 'common'),
-('streak_keeper', 'نگه‌دارنده', 'Fire', 300, 'streaks', 'rare'),
-('streak_master', 'استاد تداوم', 'Zap', 1000, 'streaks', 'epic'),
-('night_owl', 'جغد شبگرد', 'Moon', 100, 'special', 'rare'),
-('early_bird', 'سحرخیز', 'Sun', 100, 'special', 'rare'),
-('speed_demon', 'شیطان سرعت', 'Zap', 200, 'special', 'epic'),
-('ai_enthusiast', 'علاقه‌مند AI', 'Brain', 300, 'ai', 'rare'),
-('organizer', 'سازمان‌دهنده', 'FolderOpen', 150, 'organization', 'common'),
-('perfectionist', 'کمال‌گرا', 'Star', 250, 'special', 'rare'),
-('social_butterfly', 'پروانه اجتماعی', 'Users', 500, 'social', 'epic')
-ON CONFLICT (name) DO NOTHING;
+-- Note: Explicitly naming columns for clarity and safety due to new columns being added.
+INSERT INTO public.achievements (name, description, icon_name, reward_points, category, rarity, required_tasks_completed, required_streak_days, required_level, unlock_condition_type) VALUES
+('first_task', 'اولین وظیفه', 'Trophy', 50, 'tasks', 'common', 1, NULL, NULL, 'TASKS_COMPLETED'),
+('task_novice', 'تازه‌کار وظایف', 'Target', 100, 'tasks', 'common', 10, NULL, NULL, 'TASKS_COMPLETED'),
+('task_apprentice', 'شاگرد وظایف', 'Award', 200, 'tasks', 'rare', 25, NULL, NULL, 'TASKS_COMPLETED'),
+('task_expert', 'متخصص وظایف', 'Crown', 500, 'tasks', 'epic', 50, NULL, NULL, 'TASKS_COMPLETED'),
+('task_master', 'استاد وظایف', 'Gem', 1000, 'tasks', 'legendary', 100, NULL, NULL, 'TASKS_COMPLETED'),
+('streak_starter', 'شروع‌کننده', 'Flame', 150, 'streaks', 'common', NULL, 3, NULL, 'STREAK_DAYS'),
+('streak_keeper', 'نگه‌دارنده', 'Fire', 300, 'streaks', 'rare', NULL, 7, NULL, 'STREAK_DAYS'),
+('streak_master', 'استاد تداوم', 'Zap', 1000, 'streaks', 'epic', NULL, 30, NULL, 'STREAK_DAYS'),
+('night_owl', 'جغد شبگرد', 'Moon', 100, 'special', 'rare', NULL, NULL, NULL, 'NIGHT_OWL'),
+('early_bird', 'سحرخیز', 'Sun', 100, 'special', 'rare', NULL, NULL, NULL, 'EARLY_BIRD'),
+('speed_demon', 'شیطان سرعت', 'Zap', 200, 'special', 'epic', NULL, NULL, NULL, 'SPEED_DEMON'),
+('ai_enthusiast', 'علاقه‌مند AI', 'Brain', 300, 'ai', 'rare', NULL, NULL, NULL, 'AI_ENTHUSIAST'),
+('organizer', 'سازمان‌دهنده', 'FolderOpen', 150, 'organization', 'common', NULL, NULL, NULL, 'ORGANIZER'),
+('perfectionist', 'کمال‌گرا', 'Star', 250, 'special', 'rare', NULL, NULL, NULL, 'PERFECTIONIST'),
+('social_butterfly', 'پروانه اجتماعی', 'Users', 500, 'social', 'epic', NULL, NULL, NULL, 'SOCIAL_BUTTERFLY')
+ON CONFLICT (name) DO UPDATE SET
+    description = EXCLUDED.description,
+    icon_name = EXCLUDED.icon_name,
+    reward_points = EXCLUDED.reward_points,
+    category = EXCLUDED.category,
+    rarity = EXCLUDED.rarity,
+    required_tasks_completed = EXCLUDED.required_tasks_completed,
+    required_streak_days = EXCLUDED.required_streak_days,
+    required_level = EXCLUDED.required_level,
+    unlock_condition_type = EXCLUDED.unlock_condition_type;
 
 -- TABLE: user_achievements
 CREATE TABLE IF NOT EXISTS public.user_achievements (
@@ -268,78 +296,64 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE FUNCTION public.check_and_award_achievements(p_user_id uuid)
 RETURNS void AS $$
 DECLARE
-    v_total_tasks_completed integer;
-    v_achievement_name text;
-    v_achievement_id bigint;
-    v_reward_points integer;
+    v_user_settings public.user_settings%ROWTYPE;
+    v_achievement public.achievements%ROWTYPE;
     v_qualifies boolean;
-    v_already_unlocked boolean;
-
-    -- Define achievement criteria: name, required_tasks
-    -- We fetch the actual reward_points from the achievements table.
-    achievements_criteria CURSOR FOR
-        SELECT name,
-               CASE name
-                   WHEN 'first_task' THEN 1
-                   WHEN 'task_novice' THEN 10
-                   WHEN 'task_apprentice' THEN 25
-                   WHEN 'task_expert' THEN 50
-                   WHEN 'task_master' THEN 100
-                   ELSE 0 -- Should not happen if names are correct
-               END as required_tasks
-        FROM public.achievements
-        WHERE name IN ('first_task', 'task_novice', 'task_apprentice', 'task_expert', 'task_master');
-
-    achievement_row RECORD;
 BEGIN
-    -- Get total tasks completed by the user
-    SELECT total_tasks_completed INTO v_total_tasks_completed
+    -- Get user's current stats
+    SELECT * INTO v_user_settings
     FROM public.user_settings
     WHERE id = p_user_id;
 
     IF NOT FOUND THEN
-        RAISE NOTICE 'User % not found in user_settings or no tasks recorded.', p_user_id;
+        RAISE NOTICE 'User % not found in user_settings for achievements check.', p_user_id;
         RETURN;
     END IF;
 
-    IF v_total_tasks_completed IS NULL THEN
-        v_total_tasks_completed := 0;
-    END IF;
+    -- Iterate through all achievements the user hasn't unlocked yet
+    FOR v_achievement IN
+        SELECT a.*
+        FROM public.achievements a
+        LEFT JOIN public.user_achievements ua ON a.id = ua.achievement_id AND ua.user_id = p_user_id
+        WHERE ua.id IS NULL -- Only check achievements not yet unlocked
+    LOOP
+        v_qualifies := FALSE; -- Reset for each achievement
 
-    -- Loop through defined achievements
-    FOR achievement_row IN achievements_criteria LOOP
-        v_achievement_name := achievement_row.name;
-
-        v_qualifies := (v_total_tasks_completed >= achievement_row.required_tasks);
+        CASE v_achievement.unlock_condition_type
+            WHEN 'TASKS_COMPLETED' THEN
+                IF v_achievement.required_tasks_completed IS NOT NULL AND
+                   COALESCE(v_user_settings.total_tasks_completed, 0) >= v_achievement.required_tasks_completed THEN
+                    v_qualifies := TRUE;
+                END IF;
+            WHEN 'STREAK_DAYS' THEN
+                IF v_achievement.required_streak_days IS NOT NULL AND
+                   COALESCE(v_user_settings.current_streak, 0) >= v_achievement.required_streak_days THEN
+                    v_qualifies := TRUE;
+                END IF;
+            WHEN 'LEVEL_REACHED' THEN
+                IF v_achievement.required_level IS NOT NULL AND
+                   COALESCE(v_user_settings.level, 0) >= v_achievement.required_level THEN
+                    v_qualifies := TRUE;
+                END IF;
+            -- 'NIGHT_OWL', 'EARLY_BIRD', 'SPEED_DEMON', 'AI_ENTHUSIAST', 'ORGANIZER',
+            -- 'PERFECTIONIST', 'SOCIAL_BUTTERFLY' are handled by other specific triggers or logic.
+            -- This function focuses on quantifiable metrics available in user_settings.
+            ELSE
+                -- Do nothing for unknown or externally handled types
+                -- RAISE NOTICE 'Skipping achievement % with unhandled type %', v_achievement.name, v_achievement.unlock_condition_type;
+        END CASE;
 
         IF v_qualifies THEN
-            SELECT a.id, a.reward_points INTO v_achievement_id, v_reward_points
-            FROM public.achievements a
-            WHERE a.name = v_achievement_name;
+            INSERT INTO public.user_achievements (user_id, achievement_id, unlocked_at)
+            VALUES (p_user_id, v_achievement.id, NOW());
 
-            IF NOT FOUND THEN
-                RAISE WARNING 'Achievement % not found in achievements table.', v_achievement_name;
-                CONTINUE;
-            END IF;
+            UPDATE public.user_settings
+            SET aura_points = aura_points + v_achievement.reward_points
+            WHERE id = p_user_id;
 
-            SELECT EXISTS (
-                SELECT 1 FROM public.user_achievements ua
-                WHERE ua.user_id = p_user_id AND ua.achievement_id = v_achievement_id
-            ) INTO v_already_unlocked;
-
-            IF NOT v_already_unlocked THEN
-                INSERT INTO public.user_achievements (user_id, achievement_id, unlocked_at)
-                VALUES (p_user_id, v_achievement_id, NOW());
-
-                UPDATE public.user_settings
-                SET aura_points = aura_points + v_reward_points
-                WHERE id = p_user_id;
-
-                RAISE NOTICE 'User % awarded achievement % (ID: %)', p_user_id, v_achievement_name, v_achievement_id;
-            END IF;
+            RAISE NOTICE 'User % awarded achievement % (ID: %)', p_user_id, v_achievement.name, v_achievement.id;
         END IF;
     END LOOP;
-
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -473,3 +487,4 @@ CREATE INDEX idx_tags_user_id ON public.tags(user_id);
 CREATE INDEX idx_tags_guest_id ON public.tags(guest_id);
 CREATE INDEX idx_user_settings_aura_points ON public.user_settings(aura_points DESC);
 CREATE INDEX idx_user_settings_username ON public.user_settings(username);
+CREATE INDEX idx_tasks_order_index ON public.tasks(order_index);
