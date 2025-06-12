@@ -6,14 +6,10 @@ import { useAppStore } from "@/lib/store"
 import type { User, UserSettings } from "@/types" // Import types
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-// SettingsPanel is rendered by TaskDashboard based on store state, so not directly controlled here.
-// import { SettingsPanel } from "@/components/settings/SettingsPanel"
 import Link from "next/link";
 import { Settings, Sparkles, Flame, PlusCircle, Sun, Moon, Trophy, Shield, LogOut } from "lucide-react"; // Add Trophy, Shield, LogOut
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu"; // Add DropdownMenu components and Label
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-// Removed: import { useState } from "react"
-// Removed: import { useTheme } from "@/components/theme/theme-provider"
 import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast" // For Aura reward notifications

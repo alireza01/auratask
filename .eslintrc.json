@@ -1,5 +1,5 @@
 {
-  "extends": ["next/core-web-vitals", "prettier"],
+  "extends": ["next/core-web-vitals", "prettier", "eslint-config-prettier"],
   "rules": {
     "prefer-const": "error",
     "no-unused-vars": "error",
@@ -11,6 +11,6 @@
     "react/no-unescaped-entities": "off"
   },
   "parser": "@typescript-eslint/parser",
-  "plugins": ["@typescript-eslint"],
+  "plugins": ["@typescript-eslint", "eslint-plugin-prettier"],
   "ignorePatterns": ["node_modules/", ".next/", "out/", "public/"]
 }
