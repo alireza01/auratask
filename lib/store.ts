@@ -334,6 +334,8 @@ export const useAppStore = create<AppState>()(
             console.error("Error refreshing tasks:", error)
             toast.error("خطا در به‌روزرسانی وظایف")
           }
+        },
+
         // Task Actions
         addTask: async (taskData) => {
           const { user, tasks: currentTasks } = get() // Added tasks to get current list
