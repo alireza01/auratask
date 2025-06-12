@@ -43,25 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (event === "SIGNED_IN" && session?.user) {
         const newUser = session.user as User
         setUser(newUser)
-
-        // Check for guest data migration
-        const guestUserId = sessionStorage.getItem("guestUserId")
-        if (guestUserId && guestUserId !== newUser.id) {
-          try {
-            await fetch("/api/migrate-guest-data", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                new_user_id: newUser.id,
-                guest_user_id: guestUserId,
-              }),
-            })
-            sessionStorage.removeItem("guestUserId")
-          } catch (error) {
-            console.error("Error migrating guest data:", error)
-          }
-        }
-
+        // fetchInitialData is called by a separate useEffect hook when user changes.
         setShowAuth(false)
       } else if (event === "SIGNED_OUT") {
         setUser(null)
@@ -88,9 +70,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, settings])
 
   const handleGuestToAuth = () => {
-    if (user?.is_anonymous) {
-      sessionStorage.setItem("guestUserId", user.id)
-    }
     setShowAuth(true)
   }
 
