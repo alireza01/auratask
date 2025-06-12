@@ -266,11 +266,11 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- FUNCTION: check_and_award_achievements()
 CREATE OR REPLACE FUNCTION public.check_and_award_achievements(p_user_id uuid)
-RETURNS void AS $$-- ... (Function body from gamification-schema.sql) ...$$ LANGUAGE plpgsql SECURITY DEFINER;
+RETURNS void AS $$BEGIN END;$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- FUNCTION: update_user_streak()
 CREATE OR REPLACE FUNCTION public.update_user_streak(p_user_id uuid)
-RETURNS void AS $$-- ... (Function body from gamification-schema.sql) ...$$ LANGUAGE plpgsql SECURITY DEFINER;
+RETURNS void AS $$BEGIN END;$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- FUNCTION: calculate_next_level_xp()
 CREATE OR REPLACE FUNCTION public.calculate_next_level_xp(current_level integer)
@@ -282,7 +282,7 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 
 -- FUNCTION: check_level_up()
 CREATE OR REPLACE FUNCTION public.check_level_up(p_user_id uuid)
-RETURNS boolean AS $$-- ... (Function body from gamification-schema.sql) ...$$ LANGUAGE plpgsql SECURITY DEFINER;
+RETURNS boolean AS $$BEGIN RETURN false; END;$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- =================================================================
 -- INDEXES
