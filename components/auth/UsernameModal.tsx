@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-
+import { useTranslations } from "next-intl"
 import { useState } from "react"
 import { useAppStore } from "@/lib/store"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -12,6 +12,7 @@ import { Loader2, Trophy } from "lucide-react"
 import { toast } from "sonner"
 
 export function UsernameModal() {
+  const t = useTranslations("usernameModal")
   const { updateUsername, closeUsernameModal } = useAppStore()
   const [username, setUsername] = useState("")
   const [loading, setLoading] = useState(false)
@@ -20,7 +21,7 @@ export function UsernameModal() {
     e.preventDefault()
 
     if (!username.trim() || username.length < 3) {
-      toast.error("نام کاربری باید حداقل ۳ کاراکتر باشد")
+      toast.error(t("validationError"))
       return
     }
 
@@ -41,34 +42,34 @@ export function UsernameModal() {
           <div className="mx-auto w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mb-4">
             <Trophy className="w-6 h-6 text-white" />
           </div>
-          <DialogTitle className="text-center">انتخاب نام کاربری</DialogTitle>
+          <DialogTitle className="text-center">{t("title")}</DialogTitle>
           <DialogDescription className="text-center">
-            برای شرکت در جدول امتیازات، لطفاً نام کاربری خود را انتخاب کنید
+            {t("description")}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="username">نام کاربری</Label>
+            <Label htmlFor="username">{t("label")}</Label>
             <Input
               id="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="نام کاربری منحصر به فرد"
+              placeholder={t("placeholder")}
               minLength={3}
               maxLength={15}
               required
             />
-            <p className="text-xs text-muted-foreground">۳ تا ۱۵ کاراکتر، فقط حروف، اعداد و خط تیره</p>
+            <p className="text-xs text-muted-foreground">{t("helpText")}</p>
           </div>
 
           <div className="flex gap-2">
             <Button type="submit" disabled={loading || !username.trim()} className="flex-1">
               {loading ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
-              تأیید
+              {t("submitButton")}
             </Button>
             <Button type="button" variant="outline" onClick={closeUsernameModal}>
-              بعداً
+              {t("laterButton")}
             </Button>
           </div>
         </form>

@@ -56,13 +56,13 @@ interface AppState {
   addTask: (task: Omit<Task, "id" | "created_at" | "updated_at">) => Promise<void>
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>
   deleteTask: (taskId: string) => Promise<void>
-  toggleTaskComplete: (taskId: string) => Promise<void>
+  toggleTaskComplete: (taskId: string, tAuraAward: string, tDismiss: string) => Promise<void>
   reorderTasks: (reorderedTasks: Task[]) => Promise<void>
   moveTaskToGroup: (taskId: string, newGroupId: string | null) => Promise<void>
   addSubtask: (taskId: string, subtaskTitle: string) => Promise<void>
   updateSubtask: (subtaskId: string, updates: Partial<Subtask>) => Promise<void>
   deleteSubtask: (subtaskId: string) => Promise<void>
-  toggleSubtaskComplete: (subtaskId: string) => Promise<void>
+  toggleSubtaskComplete: (subtaskId: string, tAuraAward: string, tDismiss: string) => Promise<void>
 
   // Group Actions
   addGroup: (group: Omit<TaskGroup, "id" | "created_at" | "updated_at">) => Promise<void>
@@ -97,7 +97,7 @@ interface AppState {
   updateUsername: (username: string) => Promise<void>
 
   // Gamification Actions
-  awardAura: (points: number, reason: string) => Promise<void>
+  awardAura: (points: number, reason: string, tAuraAward: string, tDismiss: string) => Promise<void>
   // clearAuraReward: () => void // To be removed later - REMOVING NOW
   setJustLeveledUpTo: (level: number | null) => void // New action
   setNewlyUnlockedAchievement: (achievement: Achievement | null) => void // New action
@@ -436,7 +436,7 @@ export const useAppStore = create<AppState>()(
           }
         },
 
-        toggleTaskComplete: async (taskId) => {
+        toggleTaskComplete: async (taskId, tAuraAward, tDismiss) => {
           const { tasks, awardAura, settings: currentSettings } = get() // Renamed to avoid conflict if 'settings' is used later
           const task = tasks.find((t) => t.id === taskId)
           if (!task) return
@@ -463,7 +463,7 @@ export const useAppStore = create<AppState>()(
               const speedBonus = currentSettings ? Math.floor((task.ai_speed_score || 0) * currentSettings.ai_speed_weight) : 0;
               const totalPoints = basePoints + importanceBonus + speedBonus
 
-              await awardAura(totalPoints, "تکمیل وظیفه")
+              await awardAura(totalPoints, "تکمیل وظیفه", tAuraAward, tDismiss)
             }
 
             toast.success(updates.is_completed ? "وظیفه تکمیل شد" : "وظیفه به حالت ناتمام برگشت")
@@ -617,7 +617,7 @@ export const useAppStore = create<AppState>()(
           }
         },
 
-        toggleSubtaskComplete: async (subtaskId) => {
+        toggleSubtaskComplete: async (subtaskId, tAuraAward, tDismiss) => {
           // Find the subtask
           let subtask = null
           let parentTask = null
@@ -657,7 +657,7 @@ export const useAppStore = create<AppState>()(
 
             // Award aura points for completing subtask
             if (updates.is_completed) {
-              await get().awardAura(5, "تکمیل زیروظیفه")
+              await get().awardAura(5, "تکمیل زیروظیفه", tAuraAward, tDismiss)
             }
           } catch (error) {
             console.error("Error toggling subtask completion:", error)
@@ -1034,7 +1034,7 @@ export const useAppStore = create<AppState>()(
         },
 
         // Gamification Actions
-        awardAura: async (points, reason) => {
+        awardAura: async (points, reason, tAuraAward, tDismiss) => {
           const { user, settings, setJustLeveledUpTo } = get() // Add setJustLeveledUpTo
           if (!user || !settings) return
 
@@ -1078,7 +1078,7 @@ export const useAppStore = create<AppState>()(
               setJustLeveledUpTo(newLevelFromAwardAura)
             }
 
-            showAuraAwardToast(points, reason)
+            showAuraAwardToast(points, reason, tAuraAward, tDismiss)
           } catch (error) {
             console.error("Error awarding aura:", error)
             // Potentially show an error toast here if awarding aura itself fails critically

@@ -1,12 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useTranslations } from "next-intl"
 import { createClient } from "@/lib/supabase-client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-// Table related imports are removed as the table is deleted.
-// import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { AdminApiKeyForm } from "@/components/admin/AdminApiKeyForm"
@@ -40,6 +39,7 @@ interface ApiKeyClient {
 }
 
 export default function AdminPage() {
+  const t = useTranslations("admin")
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [userGrowth, setUserGrowth] = useState([])
   const [taskStats, setTaskStats] = useState([])
@@ -150,9 +150,9 @@ export default function AdminPage() {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Database className="w-8 h-8 text-primary" />
-            پنل مدیریت
+            {t("title")}
           </h1>
-          <p className="text-muted-foreground">نظارت و مدیریت سیستم آئورا تسک</p>
+          <p className="text-muted-foreground">{t("subtitle")}</p>
         </div>
       </motion.div>
 
@@ -165,61 +165,61 @@ export default function AdminPage() {
       >
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">کل کاربران</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("totalUsers")}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.totalUsers}</div>
-            <p className="text-xs text-muted-foreground">{stats?.activeUsers} کاربر فعال (30 روز گذشته)</p>
+            <p className="text-xs text-muted-foreground">{stats?.activeUsers} {t("activeUsersSuffix")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">کل وظایف</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("totalTasks")}</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.totalTasks}</div>
-            <p className="text-xs text-muted-foreground">در سیستم ثبت شده</p>
+            <p className="text-xs text-muted-foreground">{t("registeredInSystem")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">استفاده از AI</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("aiUsage")}</CardTitle>
             <Brain className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.aiPercentage}%</div>
-            <p className="text-xs text-muted-foreground">{stats?.aiTasks} وظیفه با AI</p>
+            <p className="text-xs text-muted-foreground">{stats?.aiTasks}{t("aiTasksSuffix")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">کلیدهای API</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("apiKeys")}</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{apiKeys.length}</div>
-            <p className="text-xs text-muted-foreground">{apiKeys.filter((k) => k.is_active).length} فعال</p>
+            <p className="text-xs text-muted-foreground">{apiKeys.filter((k) => k.is_active).length}{t("activeSuffix")}</p>
           </CardContent>
         </Card>
       </motion.div>
 
       <Tabs defaultValue="analytics" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="analytics">آنالیتیکس</TabsTrigger>
-          <TabsTrigger value="logs">لاگ‌ها</TabsTrigger>
-          <TabsTrigger value="api-keys">کلیدهای API</TabsTrigger>
+          <TabsTrigger value="analytics">{t("tabs.analytics")}</TabsTrigger>
+          <TabsTrigger value="logs">{t("tabs.logs")}</TabsTrigger>
+          <TabsTrigger value="api-keys">{t("tabs.apiKeys")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="analytics" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
               <CardHeader>
-                <CardTitle>رشد کاربران (30 روز گذشته)</CardTitle>
+                <CardTitle>{t("userGrowthTitle")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -236,7 +236,7 @@ export default function AdminPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>آمار وظایف (30 روز گذشته)</CardTitle>
+                <CardTitle>{t("taskStatsTitle")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -245,8 +245,8 @@ export default function AdminPage() {
                     <XAxis dataKey="day" />
                     <YAxis />
                     <Tooltip />
-                    <Bar dataKey="created" fill="#8884d8" name="ایجاد شده" />
-                    <Bar dataKey="completed" fill="#82ca9d" name="تکمیل شده" />
+                    <Bar dataKey="created" fill="#8884d8" name={t("chart.created")} />
+                    <Bar dataKey="completed" fill="#82ca9d" name={t("chart.completed")} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -259,9 +259,9 @@ export default function AdminPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5" />
-                لاگ‌های سیستم
+                {t("systemLogsTitle")}
               </CardTitle>
-              <CardDescription>رویدادهای مهم و خطاهای سیستم</CardDescription>
+              <CardDescription>{t("systemLogsDescription")}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-2 max-h-96 overflow-y-auto">
@@ -277,7 +277,7 @@ export default function AdminPage() {
                       <p className="text-sm">{log.message}</p>
                       {log.metadata && (
                         <details className="text-xs text-muted-foreground">
-                          <summary className="cursor-pointer">جزئیات</summary>
+                          <summary className="cursor-pointer">{t("logDetails")}</summary>
                           <pre className="mt-1 p-2 bg-muted rounded text-xs overflow-x-auto">
                             {JSON.stringify(log.metadata, null, 2)}
                           </pre>
@@ -294,8 +294,8 @@ export default function AdminPage() {
         <TabsContent value="api-keys" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>مدیریت کلیدهای API</CardTitle>
-              <CardDescription>مدیریت کلیدهای API جمینی برای پشتیبانی از کاربران</CardDescription>
+              <CardTitle>{t("manageApiKeysTitle")}</CardTitle>
+              <CardDescription>{t("manageApiKeysDescription")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <AdminApiKeyForm
@@ -308,8 +308,6 @@ export default function AdminPage() {
                 }))}
                 onSuccess={fetchAdminData}
               />
-              {/* The Table element for displaying API keys has been removed. */}
-              {/* AdminApiKeyForm now handles the display and management internally. */}
             </CardContent>
           </Card>
         </TabsContent>

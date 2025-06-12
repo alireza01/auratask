@@ -1,6 +1,7 @@
 "use client"
 
 import { Suspense, useState, useEffect } from "react"
+import { useTranslations } from "next-intl"
 import { useInfiniteQuery } from "@tanstack/react-query"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -25,6 +26,7 @@ interface LeaderboardUser {
 }
 
 function PodiumCard({ user, position }: { user: LeaderboardUser; position: 1 | 2 | 3 }) {
+  const t = useTranslations("leaderboard")
   const { theme } = useTheme()
 
   const podiumColors = {
@@ -66,18 +68,18 @@ function PodiumCard({ user, position }: { user: LeaderboardUser; position: 1 | 2
 
         <div className="text-center">
           <h3 className="text-xl font-bold">{user.username}</h3>
-          <p className="text-sm text-muted-foreground">سطح {user.level}</p>
+          <p className="text-sm text-muted-foreground">{t("levelPrefix")}{user.level}</p>
         </div>
 
         <div className="text-center">
           <p className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
             {user.aura_points.toLocaleString()}
           </p>
-          <p className="text-sm text-muted-foreground">امتیاز آئورا</p>
+          <p className="text-sm text-muted-foreground">{t("auraPointsLabel")}</p>
         </div>
 
         {user.current_streak > 0 && (
-          <Badge className="bg-orange-500/20 text-orange-600 border-orange-500/30">🔥 {user.current_streak} روز</Badge>
+          <Badge className="bg-orange-500/20 text-orange-600 border-orange-500/30">{t("streakPrefix")}{user.current_streak}{t("daysSuffix")}</Badge>
         )}
       </div>
     </motion.div>
@@ -85,6 +87,7 @@ function PodiumCard({ user, position }: { user: LeaderboardUser; position: 1 | 2
 }
 
 function LeaderboardRow({ user, index }: { user: LeaderboardUser; index: number }) {
+  const t = useTranslations("leaderboard")
   const { user: currentUser } = useAppStore()
   const { theme } = useTheme()
   const isCurrentUser = currentUser?.id === user.id
@@ -121,21 +124,22 @@ function LeaderboardRow({ user, index }: { user: LeaderboardUser; index: number 
         <div>
           <p className={cn("font-semibold", isCurrentUser && "text-primary")}>
             {user.username}
-            {isCurrentUser && " (شما)"}
+            {isCurrentUser && t("currentUserSuffix")}
           </p>
-          <p className="text-sm text-muted-foreground">سطح {user.level}</p>
+          <p className="text-sm text-muted-foreground">{t("levelPrefix")}{user.level}</p>
         </div>
       </div>
 
       <div className="text-right">
         <p className="font-bold text-lg">{user.aura_points.toLocaleString()}</p>
-        <p className="text-sm text-muted-foreground">امتیاز آئورا</p>
+        <p className="text-sm text-muted-foreground">{t("auraPointsLabel")}</p>
       </div>
     </motion.div>
   )
 }
 
 function UserRankCard({ user }: { user: LeaderboardUser }) {
+  const t = useTranslations("leaderboard")
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -151,8 +155,8 @@ function UserRankCard({ user }: { user: LeaderboardUser }) {
                 <AvatarFallback>{user.username.slice(0, 2).toUpperCase()}</AvatarFallback>
               </Avatar>
               <div>
-                <p className="font-semibold text-primary">رتبه شما: #{user.rank}</p>
-                <p className="text-sm text-muted-foreground">{user.aura_points.toLocaleString()} امتیاز</p>
+              <p className="font-semibold text-primary">{t("yourRankPrefix")}{user.rank}</p>
+              <p className="text-sm text-muted-foreground">{user.aura_points.toLocaleString()}{t("pointsSuffix")}</p>
               </div>
             </div>
             <TrendingUp className="w-5 h-5 text-primary" />
@@ -182,6 +186,7 @@ async function fetchLeaderboard(page: number, limit = 20) {
 }
 
 function LeaderboardContent() {
+  const t = useTranslations("leaderboard")
   const { user: currentUser } = useAppStore()
   const { theme } = useTheme()
   const [userRank, setUserRank] = useState<LeaderboardUser | null>(null)
@@ -231,8 +236,8 @@ function LeaderboardContent() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "جدول امتیازات آئورا تسک",
-          text: "ببینید چه کسانی در آئورا تسک پیشتاز هستند!",
+          title: t("shareTitle"),
+          text: t("shareText"),
           url: window.location.href,
         })
       } catch (error) {
@@ -251,9 +256,9 @@ function LeaderboardContent() {
       <div className="container mx-auto py-8">
         <Card className="max-w-md mx-auto">
           <CardContent className="p-6 text-center">
-            <p className="text-destructive">خطا در بارگذاری جدول امتیازات</p>
+            <p className="text-destructive">{t("errorLoading")}</p>
             <Button onClick={() => window.location.reload()} className="mt-4">
-              تلاش مجدد
+              {t("retryButton")}
             </Button>
           </CardContent>
         </Card>
@@ -265,17 +270,17 @@ function LeaderboardContent() {
     <div className="container mx-auto py-8 space-y-8 pb-24">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-4">
-        <h1 className="text-4xl font-bold gradient-text">🏆 جدول امتیازات</h1>
-        <p className="text-muted-foreground">برترین کاربران بر اساس امتیاز آئورا</p>
+        <h1 className="text-4xl font-bold gradient-text">{t("pageTitle")}</h1>
+        <p className="text-muted-foreground">{t("pageSubtitle")}</p>
 
         <div className="flex justify-center gap-4">
           <Badge className="bg-primary/10 text-primary border-primary/20">
             <Users className="w-4 h-4 mr-2" />
-            {allUsers.length}+ کاربر فعال
+            {allUsers.length}{t("activeUsersSuffix")}
           </Badge>
           <Button variant="outline" size="sm" onClick={handleShare}>
             <Share2 className="w-4 h-4 mr-2" />
-            اشتراک‌گذاری
+            {t("shareButton")}
           </Button>
         </div>
       </motion.div>
@@ -285,7 +290,7 @@ function LeaderboardContent() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <Card>
             <CardHeader>
-              <CardTitle className="text-center">🥇 سکوی افتخار</CardTitle>
+              <CardTitle className="text-center">{t("podiumTitle")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -303,7 +308,7 @@ function LeaderboardContent() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
           <Card>
             <CardHeader>
-              <CardTitle>رتبه‌بندی کامل</CardTitle>
+              <CardTitle>{t("fullRankingTitle")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
@@ -317,7 +322,7 @@ function LeaderboardContent() {
                 {hasNextPage && (
                   <div className="flex justify-center pt-6">
                     <Button onClick={() => fetchNextPage()} disabled={isFetchingNextPage} variant="outline">
-                      {isFetchingNextPage ? "در حال بارگذاری..." : "نمایش بیشتر"}
+                      {isFetchingNextPage ? t("loadingMore") : t("loadMore")}
                     </Button>
                   </div>
                 )}

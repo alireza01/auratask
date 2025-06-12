@@ -1,10 +1,12 @@
 "use client"
 
 import { useEffect } from "react"
+import { useTranslations } from "next-intl"
 import { useAppStore } from "@/lib/store"
 import { showLevelUpToast } from "@/lib/toast-notifications"
 
 export function LevelUpToastManager() {
+  const t = useTranslations("toastNotifications")
   const justLeveledUpTo = useAppStore((state) => state.justLeveledUpTo)
   const setJustLeveledUpTo = useAppStore((state) => state.setJustLeveledUpTo)
   const userSettingsLevel = useAppStore((state) => state.settings?.level) // Get current level from settings
@@ -15,10 +17,10 @@ export function LevelUpToastManager() {
       // Or, prioritize justLeveledUpTo if it's specifically set by an event.
       const levelToShow = justLeveledUpTo; // Could also use userSettingsLevel if there's a sync concern
 
-      showLevelUpToast(levelToShow)
+      showLevelUpToast(levelToShow, t("levelUpTitle"), t("levelUpSubtitle"), t("continueButton"))
       setJustLeveledUpTo(null) // Reset after showing toast
     }
-  }, [justLeveledUpTo, setJustLeveledUpTo, userSettingsLevel])
+  }, [justLeveledUpTo, setJustLeveledUpTo, userSettingsLevel, t])
 
   return null // This component does not render anything itself
 }

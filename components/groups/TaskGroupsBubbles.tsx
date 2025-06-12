@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useTranslations } from "next-intl"
 import type { Task, TaskGroup } from "@/types"
 import { NedaBubbleGroup } from "@/components/theme/NedaBubbleGroup"
 import { TaskCard } from "@/components/tasks/TaskCard"
@@ -14,6 +15,7 @@ interface TaskGroupsBubblesProps {
 }
 
 export function TaskGroupsBubbles({ groups, tasks }: TaskGroupsBubblesProps) {
+  const t = useTranslations("taskGroupsBubbles")
   const [showGroupForm, setShowGroupForm] = useState(false)
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null)
 
@@ -26,10 +28,10 @@ export function TaskGroupsBubbles({ groups, tasks }: TaskGroupsBubblesProps) {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">گروه‌های وظایف</h2>
+        <h2 className="text-2xl font-bold">{t("title")}</h2>
         <Button onClick={() => setShowGroupForm(true)}>
           <Plus className="w-4 h-4 ml-2" />
-          گروه جدید
+          {t("newGroupButton")}
         </Button>
       </div>
 
@@ -46,7 +48,7 @@ export function TaskGroupsBubbles({ groups, tasks }: TaskGroupsBubblesProps) {
 
       {ungroupedTasks.length > 0 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold">وظایف بدون گروه</h3>
+          <h3 className="text-lg font-semibold">{t("ungroupedTasksTitle")}</h3>
           <div className="grid gap-3">
             {ungroupedTasks.map((task) => (
               <TaskCard key={task.id} task={task} />

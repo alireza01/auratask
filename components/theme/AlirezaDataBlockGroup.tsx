@@ -2,6 +2,17 @@
 
 import { useState, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { useTranslations } from "next-intl"
 import type { Task, TaskGroup } from "@/types"
 import { useAppStore } from "@/lib/store"
 import { Badge } from "@/components/ui/badge"
@@ -16,9 +27,10 @@ interface DataBlockProps {
 }
 
 function DataBlock({ group, tasks, onDelete, onClick }: DataBlockProps) {
+  const t = useTranslations("alirezaDataBlockGroup")
   const [isHeld, setIsHeld] = useState(false)
-  const [deleteReady, setDeleteReady] = useState(false)
   const [holdTimer, setHoldTimer] = useState<NodeJS.Timeout | null>(null)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   const completedTasks = tasks.filter((task) => task.is_completed).length
   const totalTasks = tasks.length
@@ -36,7 +48,8 @@ function DataBlock({ group, tasks, onDelete, onClick }: DataBlockProps) {
 
     const timer = setTimeout(() => {
       if (isHeld) {
-        setDeleteReady(true)
+        // Instead of setting deleteReady, open the dialog
+        setIsDeleteDialogOpen(true)
         triggerHaptic()
       }
     }, 800)
@@ -50,22 +63,20 @@ function DataBlock({ group, tasks, onDelete, onClick }: DataBlockProps) {
       setHoldTimer(null)
     }
 
-    if (!deleteReady) {
+    // Only trigger onClick if the dialog wasn't opened by a long press
+    if (!isDeleteDialogOpen) {
       onClick()
       triggerHaptic()
     }
 
     setIsHeld(false)
-    setDeleteReady(false)
-  }, [holdTimer, deleteReady, onClick, triggerHaptic])
+    // deleteReady is removed, so no need to reset it
+  }, [holdTimer, onClick, triggerHaptic, isDeleteDialogOpen])
 
-  const handleDelete = useCallback(() => {
-    triggerHaptic()
-    onDelete()
-  }, [onDelete, triggerHaptic])
+  // handleDelete useCallback is removed
 
   return (
-    <AnimatePresence mode="wait">
+    <>
       <motion.div
         layout
         initial={{ opacity: 0, scale: 0.8, rotateX: -90 }}
@@ -102,7 +113,7 @@ function DataBlock({ group, tasks, onDelete, onClick }: DataBlockProps) {
           "relative p-6 rounded-lg backdrop-blur-md border-2 cursor-pointer",
           "bg-gray-900/80 border-yellow-400 yellow-glow",
           "transition-all duration-200",
-          deleteReady && "border-red-500 shadow-red-500/50",
+          // deleteReady && "border-red-500 shadow-red-500/50", // deleteReady is removed
         )}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
@@ -127,8 +138,8 @@ function DataBlock({ group, tasks, onDelete, onClick }: DataBlockProps) {
             <div className="flex items-center gap-3">
               <motion.div
                 className="text-3xl"
-                animate={deleteReady ? { rotate: [0, 10, -10, 0] } : {}}
-                transition={{ duration: 0.3, repeat: deleteReady ? Number.POSITIVE_INFINITY : 0 }}
+                // animate={deleteReady ? { rotate: [0, 10, -10, 0] } : {}} // deleteReady removed
+                // transition={{ duration: 0.3, repeat: deleteReady ? Number.POSITIVE_INFINITY : 0 }} // deleteReady removed
               >
                 {group.emoji}
               </motion.div>
@@ -141,37 +152,23 @@ function DataBlock({ group, tasks, onDelete, onClick }: DataBlockProps) {
               </div>
             </div>
 
-            <AnimatePresence>
-              {deleteReady && (
-                <motion.button
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0, opacity: 0 }}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={handleDelete}
-                  className="p-2 bg-red-500/80 backdrop-blur-md rounded-lg text-white hover:bg-red-600/80 transition-colors border border-red-400/50"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </motion.button>
-              )}
-            </AnimatePresence>
+            {/* Removed AnimatePresence and motion.button for Trash2 icon */}
           </div>
 
           <div className="flex gap-2 flex-wrap">
             <Badge className="bg-yellow-400/20 text-yellow-400 border-yellow-400/30">
               <Zap className="w-3 h-3 mr-1" />
-              {totalTasks} TASKS
+              {totalTasks}{t("tasksBadgeSuffix")}
             </Badge>
             {completedTasks > 0 && (
-              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">✓ {completedTasks} COMPLETE</Badge>
+              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">✓ {completedTasks}{t("completeBadgeSuffix")}</Badge>
             )}
           </div>
 
           {totalTasks > 0 && (
             <div className="space-y-2">
               <div className="flex justify-between text-xs text-gray-400">
-                <span>PROGRESS</span>
+                <span>{t("progressLabel")}</span>
                 <span>{Math.round(completionPercentage)}%</span>
               </div>
               <div className="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
@@ -197,7 +194,25 @@ function DataBlock({ group, tasks, onDelete, onClick }: DataBlockProps) {
           </div>
         </div>
       </motion.div>
-    </AnimatePresence>
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("deleteDialogTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("deleteDialogDescription", { groupName: group.name })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>{t("cancelButton")}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              onDelete() // This is the original deleteGroup(group.id)
+              setIsDeleteDialogOpen(false)
+              // triggerHaptic(); // If needed
+            }}>{t("deleteButton")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
 

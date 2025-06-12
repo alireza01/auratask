@@ -1,11 +1,13 @@
 "use client"
 
 import { useEffect } from "react"
+import { useTranslations } from "next-intl"
 import { useAppStore } from "@/lib/store"
 import { showAchievementUnlockedToast } from "@/lib/toast-notifications"
 import type { Achievement } from "@/lib/toast-notifications" // Ensure type is available
 
 export function AchievementToastManager() {
+  const t = useTranslations("toastNotifications")
   const newlyUnlockedAchievement = useAppStore((state) => state.newlyUnlockedAchievement)
   const setNewlyUnlockedAchievement = useAppStore((state) => state.setNewlyUnlockedAchievement)
 
@@ -29,10 +31,10 @@ export function AchievementToastManager() {
         unlock_condition_type: newlyUnlockedAchievement.unlock_condition_type,
       };
 
-      showAchievementUnlockedToast(achievementData)
+      showAchievementUnlockedToast(achievementData, t("pointsSuffixAura"), t("dismissButtonLabel"))
       setNewlyUnlockedAchievement(null) // Reset after showing toast
     }
-  }, [newlyUnlockedAchievement, setNewlyUnlockedAchievement])
+  }, [newlyUnlockedAchievement, setNewlyUnlockedAchievement, t])
 
   return null // This component does not render anything itself
 }

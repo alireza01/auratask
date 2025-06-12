@@ -56,5 +56,86 @@
     "statistics": "Statistics",
     "recentActivity": "Recent Activity",
     "quickActions": "Quick Actions"
+  },
+  "admin": {
+    "title": "Admin Panel",
+    "subtitle": "Monitor and manage the AuraTask system",
+    "totalUsers": "Total Users",
+    "activeUsersSuffix": "active users (last 30 days)",
+    "totalTasks": "Total Tasks",
+    "registeredInSystem": "registered in the system",
+    "aiUsage": "AI Usage",
+    "aiTasksSuffix": " AI tasks",
+    "apiKeys": "API Keys",
+    "activeSuffix": " active",
+    "tabs": {
+      "analytics": "Analytics",
+      "logs": "Logs",
+      "apiKeys": "API Keys"
+    },
+    "userGrowthTitle": "User Growth (last 30 days)",
+    "taskStatsTitle": "Task Statistics (last 30 days)",
+    "chart": {
+      "created": "Created",
+      "completed": "Completed"
+    },
+    "systemLogsTitle": "System Logs",
+    "systemLogsDescription": "Important system events and errors",
+    "logDetails": "Details",
+    "manageApiKeysTitle": "Manage API Keys",
+    "manageApiKeysDescription": "Manage Gemini API keys for user support"
+  },
+  "leaderboard": {
+    "levelPrefix": "Level ",
+    "auraPointsLabel": "Aura Points",
+    "streakPrefix": "🔥 ",
+    "daysSuffix": " days",
+    "currentUserSuffix": " (You)",
+    "yourRankPrefix": "Your Rank: #",
+    "pointsSuffix": " Points",
+    "shareTitle": "AuraTask Leaderboard",
+    "shareText": "See who's leading the way in AuraTask!",
+    "errorLoading": "Error loading leaderboard",
+    "retryButton": "Retry",
+    "pageTitle": "🏆 Leaderboard",
+    "pageSubtitle": "Top users by Aura Points",
+    "activeUsersSuffix": "+ active users",
+    "shareButton": "Share",
+    "podiumTitle": "🥇 Hall of Fame",
+    "fullRankingTitle": "Full Rankings",
+    "loadingMore": "Loading...",
+    "loadMore": "Load More"
+  },
+  "usernameModal": {
+    "validationError": "Username must be at least 3 characters long",
+    "title": "Choose Username",
+    "description": "To participate in the leaderboard, please choose your username.",
+    "label": "Username",
+    "placeholder": "Unique username",
+    "helpText": "3 to 15 characters, letters, numbers, and hyphens only",
+    "submitButton": "Confirm",
+    "laterButton": "Later"
+  },
+  "taskGroupsBubbles": {
+    "title": "Task Groups",
+    "newGroupButton": "New Group",
+    "ungroupedTasksTitle": "Ungrouped Tasks"
+  },
+  "toastNotifications": {
+    "auraAward": "+{points} Aura!",
+    "dismissButtonLabel": "Dismiss",
+    "levelUpTitle": "Congratulations! You've Leveled Up!",
+    "levelUpSubtitle": "Keep up the great work!",
+    "continueButton": "Continue",
+    "pointsSuffixAura": " Aura Points"
+  },
+  "alirezaDataBlockGroup": {
+    "deleteDialogTitle": "Are you sure?",
+    "deleteDialogDescription": "This action will permanently delete the group \"{groupName}\". This cannot be undone.",
+    "cancelButton": "Cancel",
+    "deleteButton": "Delete",
+    "tasksBadgeSuffix": " TASKS",
+    "completeBadgeSuffix": " COMPLETE",
+    "progressLabel": "PROGRESS"
   }
 }
