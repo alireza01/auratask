@@ -1,156 +1,112 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-
+// import type React from "react" // Removed unused React import
+import { useState, useEffect } from "react" // Added useEffect for potential future use, kept useState
+import { useTranslations } from "next-intl"
+import { useAppStore } from "@/lib/store"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { toast } from "@/components/ui/use-toast"
-import { getSupabaseClient } from "@/lib/supabase-client"
+import { Loader2 } from "lucide-react"
 
-interface TagFormModalProps {
-  isOpen: boolean
-  onClose: () => void
-  tagToEdit?: {
-    id: string
-    name: string
-    color: string
-  }
-}
+export function TagFormModal() {
+  const t = useTranslations()
+  const { isTagFormOpen, closeTagForm, editingTag, addTag, updateTag } = useAppStore()
 
-const DEFAULT_COLORS = [
-  "#ef4444", // red
-  "#f97316", // orange
-  "#f59e0b", // amber
-  "#84cc16", // lime
-  "#10b981", // emerald
-  "#06b6d4", // cyan
-  "#3b82f6", // blue
-  "#8b5cf6", // violet
-  "#d946ef", // fuchsia
-  "#6b7280", // gray
-]
+  const DEFAULT_COLORS = [
+    "#ef4444", "#f97316", "#f59e0b", "#84cc16", "#10b981",
+    "#06b6d4", "#3b82f6", "#8b5cf6", "#d946ef", "#6b7280",
+  ];
 
-export function TagFormModal({ isOpen, onClose, tagToEdit }: TagFormModalProps) {
-  const router = useRouter()
-  const [name, setName] = useState(tagToEdit?.name || "")
-  const [color, setColor] = useState(tagToEdit?.color || DEFAULT_COLORS[0])
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [name, setName] = useState(editingTag?.name || "")
+  const [color, setColor] = useState(editingTag?.color || DEFAULT_COLORS[0])
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!name.trim()) {
-      toast({
-        title: "Error",
-        description: "Tag name is required",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setIsSubmitting(true)
-    const supabase = getSupabaseClient()
-
-    try {
-      if (tagToEdit) {
-        // Update existing tag
-        const { error } = await supabase.from("tags").update({ name, color }).eq("id", tagToEdit.id)
-
-        if (error) throw error
-
-        toast({
-          title: "Success",
-          description: "Tag updated successfully",
-        })
+  // Effect to reset form when editingTag changes or modal opens/closes
+  useEffect(() => {
+    if (isTagFormOpen) {
+      if (editingTag) {
+        setName(editingTag.name)
+        setColor(editingTag.color || DEFAULT_COLORS[0])
       } else {
-        // Create new tag
-        const { error } = await supabase.from("tags").insert({ name, color })
-
-        if (error) throw error
-
-        toast({
-          title: "Success",
-          description: "Tag created successfully",
-        })
+        setName("")
+        setColor(DEFAULT_COLORS[0])
       }
+    }
+  }, [isTagFormOpen, editingTag])
 
-      router.refresh()
-      onClose()
+
+  const handleSubmit = async (e: React.FormEvent) => { // Ensured React.FormEvent is available or use generic Event
+    e.preventDefault()
+    if (!name.trim()) return
+
+    setLoading(true)
+    try {
+      if (editingTag) {
+        await updateTag(editingTag.id, { name: name.trim(), color })
+      } else {
+        await addTag({ name: name.trim(), color })
+      }
+      closeTagForm()
     } catch (error) {
       console.error("Error saving tag:", error)
-      toast({
-        title: "Error",
-        description: "Failed to save tag",
-        variant: "destructive",
-      })
     } finally {
-      setIsSubmitting(false)
+      setLoading(false)
     }
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[425px]">
+    <Dialog open={isTagFormOpen} onOpenChange={closeTagForm}>
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle>{tagToEdit ? "Edit Tag" : "Create New Tag"}</DialogTitle>
+          <DialogTitle>{editingTag ? t("tags.editTag") : t("tags.newTag")}</DialogTitle>
           <DialogDescription>
-            {tagToEdit ? "Update the tag details below." : "Add a new tag to organize your tasks."}
+            {editingTag ? t("tags.editTagDescription") : t("tags.newTagDescription")}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="name">Tag Name</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter tag name"
-                autoFocus
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label>Color</Label>
-              <div className="flex flex-wrap gap-2">
-                {DEFAULT_COLORS.map((colorOption) => (
-                  <button
-                    key={colorOption}
-                    type="button"
-                    className={`w-8 h-8 rounded-full transition-all ${
-                      color === colorOption ? "ring-2 ring-offset-2 ring-primary" : ""
-                    }`}
-                    style={{ backgroundColor: colorOption }}
-                    onClick={() => setColor(colorOption)}
-                    aria-label={`Select color ${colorOption}`}
-                  />
-                ))}
-              </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="tagName">{t("tags.tagName")}</Label>
+            <Input
+              id="tagName"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={t("tags.namePlaceholder")}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>{t("tags.tagColor")}</Label>
+            <div className="flex flex-wrap gap-2">
+              {DEFAULT_COLORS.map((colorOption) => (
+                <button
+                  key={colorOption}
+                  type="button"
+                  className={`w-8 h-8 rounded-full transition-all ${
+                    color === colorOption ? "ring-2 ring-offset-2 ring-primary" : ""
+                  }`}
+                  style={{ backgroundColor: colorOption }}
+                  onClick={() => setColor(colorOption)}
+                  aria-label={`${t("tags.selectColor")} ${colorOption}`}
+                />
+              ))}
             </div>
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-              Cancel
+
+          <div className="flex gap-2 justify-end">
+            <Button type="button" variant="outline" onClick={closeTagForm}>
+              {t("common.cancel")}
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : tagToEdit ? "Update Tag" : "Create Tag"}
+            <Button type="submit" disabled={loading || !name.trim()}>
+              {loading ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
+              {editingTag ? t("common.update") : t("common.create")}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
   )
 }
-
-// Export the component as a named export

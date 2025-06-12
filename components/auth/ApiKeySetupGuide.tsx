@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState } from "react" // Changed from "import * as React from "react""
+import { useTranslations } from "next-intl"
 import { useAppStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,9 +16,10 @@ interface ApiKeySetupGuideProps {
 }
 
 export function ApiKeySetupGuide({ onComplete, onSkip }: ApiKeySetupGuideProps) {
+  const t = useTranslations()
   const { updateSettings } = useAppStore()
-  const [apiKey, setApiKey] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [apiKey, setApiKey] = useState("") // Changed from React.useState
+  const [loading, setLoading] = useState(false) // Changed from React.useState
 
   const handleSaveApiKey = async () => {
     if (!apiKey.trim()) {
@@ -48,8 +50,8 @@ export function ApiKeySetupGuide({ onComplete, onSkip }: ApiKeySetupGuideProps) 
           <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
             <Key className="w-6 h-6 text-primary" />
           </div>
-          <CardTitle className="text-2xl font-bold">تنظیم کلید API جمینی</CardTitle>
-          <CardDescription>برای استفاده از قابلیت‌های هوشمند، کلید API جمینی مورد نیاز است</CardDescription>
+          <CardTitle className="text-2xl font-bold">{t("auth.setupApiKey")}</CardTitle>
+          <CardDescription>{t("auth.apiKeyRequired")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-4">
@@ -93,10 +95,10 @@ export function ApiKeySetupGuide({ onComplete, onSkip }: ApiKeySetupGuideProps) 
             <div className="flex gap-2">
               <Button onClick={handleSaveApiKey} disabled={loading || !apiKey.trim()} className="flex-1" size="lg">
                 {loading ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : null}
-                ذخیره کلید API
+                {t("auth.saveApiKey")}
               </Button>
               <Button variant="outline" onClick={onSkip} size="lg">
-                فعلاً رد کن
+                {t("auth.skipForNow")}
               </Button>
             </div>
           </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+// import type React from "react" // Removed unused React import
 
 import { useState, useEffect } from "react"
 import { useTranslations } from "next-intl"
@@ -54,7 +54,7 @@ export function TaskFormModal() {
     }
   }, [editingTask, isTaskFormOpen])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => { // React.FormEvent should be fine
     e.preventDefault()
     if (!title.trim()) return
 
@@ -123,7 +123,7 @@ export function TaskFormModal() {
             {editingTask ? t("tasks.editTask") : t("tasks.newTask")}
           </DialogTitle>
           <DialogDescription>
-            {editingTask ? "ویرایش وظیفه موجود" : "ایجاد وظیفه جدید با قابلیت‌های هوشمند"}
+            {editingTask ? t("tasks.editTaskDescription") : t("tasks.newTaskWithAiDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -134,7 +134,7 @@ export function TaskFormModal() {
               id="taskTitle"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="عنوان وظیفه را وارد کنید"
+              placeholder={t("tasks.titlePlaceholder")}
               required
             />
           </div>
@@ -145,7 +145,7 @@ export function TaskFormModal() {
               id="taskDescription"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="توضیحات اختیاری"
+              placeholder={t("tasks.descriptionPlaceholder")}
               rows={3}
             />
           </div>
@@ -153,12 +153,12 @@ export function TaskFormModal() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>{t("groups.groupName")}</Label>
-              <Select value={groupId || ""} onValueChange={(value) => setGroupId(value || null)}>
+              <Select value={groupId || ""} onValueChange={(value) => setGroupId(value === "no-group" ? null : value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="انتخاب گروه" />
+                  <SelectValue placeholder={t("groups.selectGroupPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="no-group">بدون گروه</SelectItem>
+                  <SelectItem value="no-group">{t("groups.noGroup")}</SelectItem>
                   {groups.map((group) => (
                     <SelectItem key={group.id} value={group.id}>
                       {group.emoji} {group.name}
@@ -174,7 +174,7 @@ export function TaskFormModal() {
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start text-left font-normal">
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dueDate ? format(dueDate, "PPP", { locale: fa }) : "انتخاب تاریخ"}
+                    {dueDate ? format(dueDate, "PPP", { locale: fa }) : t("tasks.selectDate")}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -210,7 +210,7 @@ export function TaskFormModal() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Brain className="w-5 h-5 text-primary" />
-                  <Label className="text-base font-medium">تنظیمات هوش مصنوعی</Label>
+                  <Label className="text-base font-medium">{t("tasks.aiSettingsLabel")}</Label>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -218,9 +218,9 @@ export function TaskFormModal() {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <Target className="w-4 h-4 text-blue-500" />
-                        <Label className="font-medium">رتبه‌بندی هوشمند</Label>
+                        <Label className="font-medium">{t("tasks.aiRankingLabel")}</Label>
                       </div>
-                      <p className="text-sm text-muted-foreground">تحلیل اهمیت و سرعت انجام وظیفه</p>
+                      <p className="text-sm text-muted-foreground">{t("tasks.aiRankingDescription")}</p>
                     </div>
                     <Switch checked={enableAiRanking} onCheckedChange={setEnableAiRanking} />
                   </div>
@@ -229,9 +229,9 @@ export function TaskFormModal() {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <Sparkles className="w-4 h-4 text-purple-500" />
-                        <Label className="font-medium">زیروظایف خودکار</Label>
+                        <Label className="font-medium">{t("tasks.aiSubtasksLabel")}</Label>
                       </div>
-                      <p className="text-sm text-muted-foreground">ایجاد زیروظایف پیشنهادی</p>
+                      <p className="text-sm text-muted-foreground">{t("tasks.aiSubtasksDescription")}</p>
                     </div>
                     <Switch checked={enableAiSubtasks} onCheckedChange={setEnableAiSubtasks} />
                   </div>
@@ -240,7 +240,7 @@ export function TaskFormModal() {
                 {(enableAiRanking || enableAiSubtasks) && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
                     <Sparkles className="w-4 h-4" />
-                    <span>هوش مصنوعی این وظیفه را تحلیل خواهد کرد</span>
+                    <span>{t("tasks.aiWillProcessTask")}</span>
                     {aiProcessing && <Loader2 className="w-4 h-4 animate-spin" />}
                   </div>
                 )}
