@@ -2,6 +2,7 @@
 import { toast } from 'sonner';
 import { Sparkles, Star, Crown, Trophy, Target, Award, Gem, Flame, Fire, Zap, Moon, Sun, Brain, FolderOpen, Users, Icon as LucideIcon } from 'lucide-react';
 import type { ComponentType } from 'react';
+import { triggerHapticFeedback, HapticFeedbackType } from './haptics';
 
 // Assuming Achievement type structure based on schema and usage
 export interface Achievement {
@@ -57,6 +58,7 @@ const getIconComponent = (iconName: string): LucideIcon | ComponentType<any> => 
 
 
 export function showAuraAwardToast(points: number, reason: string) {
+  triggerHapticFeedback(HapticFeedbackType.Success);
   toast.custom((t) => (
     <div className="p-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-xl rounded-lg flex items-center gap-4 border border-purple-700">
       <Sparkles className="w-7 h-7 text-yellow-300 flex-shrink-0" />
@@ -76,6 +78,7 @@ export function showAuraAwardToast(points: number, reason: string) {
 }
 
 export function showLevelUpToast(newLevel: number) {
+  triggerHapticFeedback(HapticFeedbackType.LevelUp);
   toast.custom((t) => (
     <div className="p-6 max-w-sm mx-auto bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white rounded-xl shadow-2xl text-center relative overflow-hidden">
       <div className="absolute -top-4 -left-4 w-16 h-16 bg-white/20 rounded-full animate-pulse"></div>
@@ -101,6 +104,7 @@ export function showLevelUpToast(newLevel: number) {
 }
 
 export function showAchievementUnlockedToast(achievement: Achievement) {
+  triggerHapticFeedback(HapticFeedbackType.Achievement);
   const rarityStyles = getRarityStyles(achievement.rarity);
   const IconComponent = getIconComponent(achievement.icon_name);
 

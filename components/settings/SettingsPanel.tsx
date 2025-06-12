@@ -25,7 +25,8 @@ interface SettingsPanelProps {
 export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
   const t = useTranslations()
   const { toast } = useToast()
-  const { user, setUser } = useAppStore()
+  const { user, setUser, settings, setHapticFeedbackEnabled } = useAppStore() // Updated
+  const hapticFeedbackEnabled = settings?.haptic_feedback_enabled ?? true; // Get from settings, default true
   const { theme, setTheme } = useTheme()
   const [loading, setLoading] = useState(false)
 
@@ -180,6 +181,26 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
               >
                 بازگردانی به پیش‌فرض
               </Button>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Haptic Feedback Settings */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="haptic-feedback-mode">{t('settings.hapticFeedback')}</Label>
+                <p className="text-sm text-muted-foreground">
+                  {t('settings.hapticFeedbackDescription')}
+                </p>
+              </div>
+              <Switch
+                id="haptic-feedback-mode"
+                checked={hapticFeedbackEnabled}
+                onCheckedChange={setHapticFeedbackEnabled}
+                aria-label="Toggle haptic feedback"
+              />
             </div>
           </div>
 

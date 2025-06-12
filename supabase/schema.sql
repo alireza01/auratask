@@ -30,6 +30,7 @@ CREATE TABLE public.user_settings (
     ai_importance_weight real NOT NULL DEFAULT 0.5,
     dark_mode boolean NOT NULL DEFAULT false,
     theme text NOT NULL DEFAULT 'default',
+    haptic_feedback_enabled boolean not null default true,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     -- Gamification fields from gamification-schema.sql
     level_up_xp_threshold integer DEFAULT 100,

@@ -56,5 +56,9 @@
     "statistics": "Statistics",
     "recentActivity": "Recent Activity",
     "quickActions": "Quick Actions"
+  },
+  "settings": {
+    "hapticFeedback": "Haptic Feedback",
+    "hapticFeedbackDescription": "Enable vibrations for notifications on mobile."
   }
 }
