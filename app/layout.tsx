@@ -17,7 +17,6 @@ export const metadata: Metadata = {
   title: "AuraTask - Smart Task Management",
   description: "AI-powered task management with gamification",
   manifest: "/manifest.json",
-  themeColor: "#000000",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
