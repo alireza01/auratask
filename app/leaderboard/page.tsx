@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Trophy, Medal, Award, Crown, Share2, Users, TrendingUp } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { LeaderboardSkeleton } from "@/components/core/LeaderboardSkeleton"
-import { createClient } from "@/lib/supabase-client"
+import { getSupabaseClient } from "@/lib/supabase-client"
 import { useAppStore } from "@/lib/store"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
@@ -172,7 +172,7 @@ function UserRankCard({ user }: { user: LeaderboardUser }) {
 }
 
 async function fetchLeaderboard(page: number, limit = 20) {
-  const supabase = createClient()
+  const supabase = getSupabaseClient()
   const offset = page * limit
 
   const { data, error } = await supabase
@@ -208,7 +208,7 @@ function LeaderboardContent() {
   useEffect(() => {
     if (currentUser) {
       const fetchUserRank = async () => {
-        const supabase = createClient()
+        const supabase = getSupabaseClient()
         const { data: userSettings } = await supabase
           .from("user_settings")
           .select("id, username, aura_points, level, avatar_url, current_streak")
