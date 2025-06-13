@@ -14,6 +14,7 @@ interface AuraReward {
 interface AppState {
   // Data State
   user: User | null
+  guestId: string | null; // Add this line
   tasks: Task[]
   groups: TaskGroup[]
   tags: Tag[]
@@ -41,12 +42,14 @@ interface AppState {
 
   // Actions
   setUser: (user: User | null) => void
+  setGuestId: (guestId: string | null) => void;
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
   setDarkMode: (darkMode: boolean) => void
 
   // Data Actions
   fetchInitialData: () => Promise<void>
+  migrateGuestData: (userId: string) => Promise<void>; // Add this line
   refreshTasks: () => Promise<void>
 
   // Task Actions
@@ -120,6 +123,7 @@ export const useAppStore = create<AppState>()(
       (set, get) => ({
         // Initial State
         user: null,
+        guestId: null, // Add this line
         tasks: [],
         groups: [],
         tags: [],
@@ -143,6 +147,7 @@ export const useAppStore = create<AppState>()(
 
         // Basic Setters
         setUser: (user) => set({ user }),
+        setGuestId: (guestId) => set({ guestId }),
         setLoading: (isLoading) => set({ isLoading }),
         setError: (error) => set({ error }),
         setDarkMode: (darkMode) => {
@@ -273,6 +278,21 @@ export const useAppStore = create<AppState>()(
               isLoading: false,
             })
             toast.error("خطا در بارگذاری اطلاعات")
+          }
+        },
+
+        migrateGuestData: async (userId: string) => { // Add this function
+          const { guestId } = get();
+          if (guestId) {
+            console.warn(`Placeholder: Migrating data for guest ${guestId} to user ${userId}. Actual migration logic needs to be implemented.`);
+            // Here, you would typically:
+            // 1. Fetch data associated with guestId from Supabase.
+            // 2. Update that data to be associated with userId.
+            // 3. Clear the guestId.
+            set({ guestId: null });
+            // 4. Refresh data for the now logged-in user.
+            await get().fetchInitialData();
+            toast.info("Guest data migration process initiated (placeholder).");
           }
         },
 
@@ -1113,6 +1133,7 @@ export const useAppStore = create<AppState>()(
           activeTab: state.activeTab,
           filters: state.filters,
           showFilters: state.showFilters,
+          guestId: state.guestId, // Add guestId here
         }),
       },
     ),
