@@ -91,7 +91,15 @@ async function processTaskHandler(request: NextRequest) {
     }
 
     // Prepare AI analysis based on user preferences
-    let aiAnalysis = {
+    let aiAnalysis: {
+      ai_speed_score: number | null
+      ai_importance_score: number | null
+      speed_tag: string | null
+      importance_tag: string | null
+      emoji: string | null
+      sub_tasks: string[]
+      ai_generated: boolean
+    } = {
       ai_speed_score: null,
       ai_importance_score: null,
       speed_tag: null,
