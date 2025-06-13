@@ -3,6 +3,15 @@ import { createClient } from "@/lib/supabase-server"
 import { withRateLimit } from "@/lib/with-rate-limit"
 import { ProcessTaskSchema } from "@/lib/validationSchemas"
 
+interface AiAnalysisResult {
+  sub_tasks: string[]
+  ai_speed_score: number | null
+  ai_importance_score: number | null
+  speed_tag: string | null
+  importance_tag: string | null
+  emoji: string | null
+}
+
 async function processTaskHandler(request: NextRequest) {
   try {
     const requestBody = await request.json()
@@ -215,7 +224,7 @@ ${
 
         if (responseText) {
           try {
-            const parsedAnalysis = JSON.parse(responseText.replace(/```json\n?|\n?```/g, ""))
+            const parsedAnalysis = JSON.parse(responseText.replace(/```json\n?|\n?```/g, "")) as AiAnalysisResult;
 
             // Validate ai_speed_score
             if (parsedAnalysis.ai_speed_score !== null) {
