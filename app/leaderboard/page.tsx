@@ -185,6 +185,12 @@ async function fetchLeaderboard(page: number, limit = 20) {
 
   return data.map((user, index) => ({
     ...user,
+    id: user.id as string,
+    username: user.username as string,
+    aura_points: user.aura_points as number,
+    level: user.level as number,
+    avatar_url: user.avatar_url as string | undefined,
+    current_streak: user.current_streak as number,
     rank: offset + index + 1,
   }))
 }
@@ -198,6 +204,7 @@ function LeaderboardContent() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } = useInfiniteQuery({
     queryKey: ["leaderboard"],
     queryFn: ({ pageParam = 0 }) => fetchLeaderboard(pageParam),
+    initialPageParam: 0, // Added this line
     getNextPageParam: (lastPage, pages) => {
       return lastPage.length === 20 ? pages.length : undefined
     },
@@ -223,6 +230,12 @@ function LeaderboardContent() {
 
           setUserRank({
             ...userSettings,
+            id: userSettings.id as string,
+            username: userSettings.username as string,
+            avatar_url: userSettings.avatar_url as string | undefined,
+            aura_points: userSettings.aura_points as number,
+            level: userSettings.level as number,
+            current_streak: userSettings.current_streak as number,
             rank: (count || 0) + 1,
           })
         }
