@@ -12,6 +12,14 @@ import { AdminApiKeyForm } from "@/components/admin/AdminApiKeyForm"
 import { Users, Activity, Brain, AlertTriangle, TrendingUp, Database } from "lucide-react"
 import { motion } from "framer-motion"
 
+const isEmptyObject = (obj: any): boolean => {
+  if (obj === null || obj === undefined || typeof obj !== 'object' || Array.isArray(obj)) {
+    return false;
+  }
+  // At this point, obj is an object (and not an array)
+  return Object.keys(obj).length === 0;
+};
+
 interface AdminStats {
   totalUsers: number
   activeUsers: number
@@ -97,10 +105,10 @@ export default function AdminPage() {
         aiPercentage: (aiStats as any)?.[0]?.ai_percentage || 0,
       })
 
-      setUserGrowth(userGrowthData || [])
-      setTaskStats(taskStatsData || [])
-      setLogs(logsData || [])
-      setApiKeys(apiKeysData as ApiKeyClient[] || [])
+      setUserGrowth(isEmptyObject(userGrowthData) ? [] : (Array.isArray(userGrowthData) ? userGrowthData : []))
+      setTaskStats(isEmptyObject(taskStatsData) ? [] : (Array.isArray(taskStatsData) ? taskStatsData : []))
+      setLogs(isEmptyObject(logsData) ? [] : (Array.isArray(logsData) ? logsData as unknown as LogEntry[] : []))
+      setApiKeys(apiKeysData as unknown as ApiKeyClient[] || [])
     } catch (error) {
       console.error("Error fetching admin data:", error)
     } finally {
