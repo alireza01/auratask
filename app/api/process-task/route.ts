@@ -216,6 +216,7 @@ ${
         if (responseText) {
           try {
             const parsedAnalysis = JSON.parse(responseText.replace(/```json\n?|\n?```/g, ""))
+            const isString = (val: any): val is string => typeof val === "string";
 
             // Validate ai_speed_score
             if (parsedAnalysis.ai_speed_score !== null) {
@@ -291,7 +292,7 @@ ${
             }
 
             // Validate sub_tasks
-            if (!Array.isArray(parsedAnalysis.sub_tasks) || !parsedAnalysis.sub_tasks.every((st: string) => typeof st === "string")) {
+            if (!Array.isArray(parsedAnalysis.sub_tasks) || !parsedAnalysis.sub_tasks.every(isString)) {
               await supabase.rpc("log_event", {
                 p_level: "WARNING",
                 p_message: "AI response validation failed for sub_tasks structure or type",
