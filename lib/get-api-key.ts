@@ -24,11 +24,9 @@ export async function getApiKeyForUser(userId: string): Promise<string | null> {
 
   if (adminKeys && adminKeys.length > 0) {
     const adminKey = adminKeys[0];
-    // Update usage count (fire and forget)
+    // Update usage count using RPC (fire and forget)
     supabase
-      .from("admin_api_keys")
-      .update({ usage_count: supabase.sql`usage_count + 1` })
-      .eq("id", adminKey.id)
+      .rpc('increment_api_key_usage', { p_key_id: adminKey.id })
       .then(({ error }) => {
         if (error) console.error("Error updating admin key usage:", error);
       });

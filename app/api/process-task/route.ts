@@ -67,10 +67,7 @@ async function processTaskHandler(request: NextRequest) {
         apiKey = adminKeys[0].api_key
 
         // Update usage count
-        await supabase
-          .from("admin_api_keys")
-          .update({ usage_count: supabase.sql`usage_count + 1` })
-          .eq("id", adminKeys[0].id)
+        await supabase.rpc('increment_api_key_usage', { p_key_id: adminKeys[0].id })
       }
     }
 

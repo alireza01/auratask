@@ -262,6 +262,16 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- FUNCTION: increment_api_key_usage
+CREATE OR REPLACE FUNCTION public.increment_api_key_usage(p_key_id uuid)
+RETURNS void AS $$
+BEGIN
+    UPDATE public.admin_api_keys
+    SET usage_count = usage_count + 1
+    WHERE id = p_key_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- FUNCTION: check_and_award_achievements()
 CREATE OR REPLACE FUNCTION public.check_and_award_achievements(p_user_id uuid)
 RETURNS void AS $$
