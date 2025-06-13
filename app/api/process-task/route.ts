@@ -291,7 +291,7 @@ ${
             }
 
             // Validate sub_tasks
-            if (!Array.isArray(parsedAnalysis.sub_tasks) || !parsedAnalysis.sub_tasks.every(st => typeof st === "string")) {
+            if (!Array.isArray(parsedAnalysis.sub_tasks) || !parsedAnalysis.sub_tasks.every((st: string) => typeof st === "string")) {
               await supabase.rpc("log_event", {
                 p_level: "WARNING",
                 p_message: "AI response validation failed for sub_tasks structure or type",
