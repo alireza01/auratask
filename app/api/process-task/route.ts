@@ -91,7 +91,7 @@ async function processTaskHandler(request: NextRequest) {
     }
 
     // Prepare AI analysis based on user preferences
-    let aiAnalysis = {
+    let aiAnalysis: AiAnalysisState = {
       ai_speed_score: null,
       ai_importance_score: null,
       speed_tag: null,
@@ -344,6 +344,16 @@ ${
               ...parsedAnalysis,
               ai_generated: true,
             }
+
+interface AiAnalysisState {
+  ai_speed_score: number | null;
+  ai_importance_score: number | null;
+  speed_tag: string | null;
+  importance_tag: string | null;
+  emoji: string | null;
+  sub_tasks: string[];
+  ai_generated: boolean;
+}
 
             // Log successful AI processing
             await supabase.rpc("log_event", {
