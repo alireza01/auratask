@@ -35,27 +35,31 @@ export function TaskGroupsBubbles({ groups, tasks }: TaskGroupsBubblesProps) {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {groupedTasks.map((group) => (
-          <NedaBubbleGroup
-            key={group.id}
-            group={group}
-            tasks={group.tasks}
-            onClick={() => setSelectedGroup(group.id)}
-          />
-        ))}
-      </div>
+      {/* The NedaBubbleGroup component handles rendering all groups in its canvas */}
+      <NedaBubbleGroup
+        groups={groups}
+        tasks={tasks}
+        onGroupClick={setSelectedGroup}
+      />
 
-      {ungroupedTasks.length > 0 && (
-        <div className="space-y-4">
+      {/* Display tasks that are not part of any bubble/group */}
+      {selectedGroup === null && ungroupedTasks.length > 0 && (
+        <div className="mt-6 space-y-4"> {/* Added margin top for separation */}
           <h3 className="text-lg font-semibold">{t("ungroupedTasksTitle")}</h3>
-          <div className="grid gap-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"> {/* Added responsive grid for cards */}
             {ungroupedTasks.map((task) => (
               <TaskCard key={task.id} task={task} />
             ))}
           </div>
         </div>
       )}
+
+      {/* TODO: When a group is selected (selectedGroup !== null),
+           filter and display tasks belonging to that group here, perhaps using TaskCard as well.
+           This part is not explicitly in the original request but is a logical next step.
+           For now, only ungrouped tasks are shown when no group is selected.
+      */}
+
 
       <GroupFormModal open={showGroupForm} onOpenChange={setShowGroupForm} />
     </div>
