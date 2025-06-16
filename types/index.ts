@@ -85,11 +85,11 @@ export interface TaskFilters {
 }
 
 export interface AITaskAnalysis {
-  ai_speed_score: number
-  ai_importance_score: number
-  speed_tag: string
-  importance_tag: string
-  emoji: string
+  ai_speed_score: number | null
+  ai_importance_score: number | null
+  speed_tag: string | null
+  importance_tag: string | null
+  emoji: string | null
   sub_tasks?: string[]
   ai_generated: boolean
 }
