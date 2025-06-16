@@ -1,7 +1,7 @@
 "use client"
 import { useState } from "react"
 import { useAppStore } from "@/lib/store"
-import { TaskCard } from "./task-card"
+import { TaskCard } from "./TaskCard"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Archive, ChevronDown, ChevronUp } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
