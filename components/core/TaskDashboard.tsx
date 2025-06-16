@@ -172,7 +172,7 @@ export function TaskDashboard() {
 
         {/* Modals */}
         {isTaskFormOpen && <TaskFormModal />}
-        {isGroupFormOpen && <GroupFormModal open={isGroupFormOpen} onOpenChange={closeGroupForm} group={editingGroup} />}
+        {isGroupFormOpen && <GroupFormModal open={isGroupFormOpen} onOpenChange={closeGroupForm} group={editingGroup || undefined} />}
         {isTagFormOpen && <TagFormModal />}
         {isSettingsPanelOpen && <SettingsPanel />}
       </div>
