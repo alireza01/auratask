@@ -25,10 +25,9 @@ interface SettingsPanelProps {
 export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
   const t = useTranslations()
   const { toast } = useToast()
-  const { user, setUser, settings, setHapticFeedbackEnabled } = useAppStore() // Updated
+  const { user, setUser, settings, setHapticFeedbackEnabled, updateSettings } = useAppStore() // Updated
   const hapticFeedbackEnabled = settings?.haptic_feedback_enabled ?? true; // Get from settings, default true
   const { theme, setTheme } = useTheme()
-  const [loading, setLoading] = useState(false)
 
   const handleSignOut = async () => {
     try {
@@ -39,35 +38,9 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
     }
   }
 
-  const handleUpdateSettings = async (updates: Partial<typeof user>) => {
-    if (!user) return
-
-    try {
-      setLoading(true)
-      const { error } = await supabase.from("users").update(updates).eq("id", user.id)
-
-      if (error) throw error
-
-      setUser({ ...user, ...updates })
-      toast({
-        title: t("common.success"),
-        description: "تنظیمات با موفقیت به‌روزرسانی شد",
-      })
-    } catch (error) {
-      console.error("Error updating settings:", error)
-      toast({
-        title: t("common.error"),
-        description: "خطا در به‌روزرسانی تنظیمات",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const handleThemeChange = (newTheme: "default" | "alireza" | "neda") => {
     setTheme(newTheme)
-    handleUpdateSettings({ theme: newTheme })
+    updateSettings({ theme: newTheme })
   }
 
   return (
@@ -132,24 +105,24 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
               <div className="flex items-center justify-between">
                 <Label>رتبه‌بندی خودکار</Label>
                 <Switch
-                  checked={user?.auto_ranking_enabled}
-                  onCheckedChange={(checked) => handleUpdateSettings({ auto_ranking_enabled: checked })}
+                  checked={settings?.auto_ranking_enabled}
+                  onCheckedChange={(checked) => updateSettings({ auto_ranking_enabled: checked })}
                 />
               </div>
 
               <div className="flex items-center justify-between">
                 <Label>زیر وظایف خودکار</Label>
                 <Switch
-                  checked={user?.auto_subtask_enabled}
-                  onCheckedChange={(checked) => handleUpdateSettings({ auto_subtask_enabled: checked })}
+                  checked={settings?.auto_subtask_enabled}
+                  onCheckedChange={(checked) => updateSettings({ auto_subtask_enabled: checked })}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>وزن سرعت: {user?.ai_speed_weight}</Label>
+                <Label>وزن سرعت: {settings?.ai_speed_weight}</Label>
                 <Slider
-                  value={[user?.ai_speed_weight || 1]}
-                  onValueChange={([value]) => handleUpdateSettings({ ai_speed_weight: value })}
+                  value={[settings?.ai_speed_weight || 1]}
+                  onValueChange={([value]) => updateSettings({ ai_speed_weight: value })}
                   max={5}
                   min={0.1}
                   step={0.1}
@@ -158,10 +131,10 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
               </div>
 
               <div className="space-y-2">
-                <Label>وزن اهمیت: {user?.ai_importance_weight}</Label>
+                <Label>وزن اهمیت: {settings?.ai_importance_weight}</Label>
                 <Slider
-                  value={[user?.ai_importance_weight || 1]}
-                  onValueChange={([value]) => handleUpdateSettings({ ai_importance_weight: value })}
+                  value={[settings?.ai_importance_weight || 1]}
+                  onValueChange={([value]) => updateSettings({ ai_importance_weight: value })}
                   max={5}
                   min={0.1}
                   step={0.1}
@@ -172,7 +145,7 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
               <Button
                 variant="outline"
                 onClick={() =>
-                  handleUpdateSettings({
+                  updateSettings({
                     ai_speed_weight: 1.0,
                     ai_importance_weight: 1.0,
                   })
@@ -213,8 +186,8 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
               <Input
                 type="password"
                 placeholder="کلید API جمینی"
-                value={user?.gemini_api_key || ""}
-                onChange={(e) => handleUpdateSettings({ gemini_api_key: e.target.value })}
+                value={settings?.gemini_api_key || ""}
+                onChange={(e) => updateSettings({ gemini_api_key: e.target.value })}
               />
               <p className="text-xs text-muted-foreground">کلید API برای استفاده از قابلیت‌های هوشمند مورد نیاز است</p>
             </div>
