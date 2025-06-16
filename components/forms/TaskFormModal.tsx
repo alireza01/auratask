@@ -38,7 +38,7 @@ export function TaskFormModal() {
     if (editingTask) {
       setTitle(editingTask.title)
       setDescription(editingTask.description || "")
-      setGroupId(editingTask.group_id)
+      setGroupId(editingTask.group_id ?? null)
       setDueDate(editingTask.due_date ? new Date(editingTask.due_date) : undefined)
       setSelectedTags(editingTask.tags?.map((tag) => tag.id) || [])
       setEnableAiRanking(editingTask.enable_ai_ranking ?? true)
