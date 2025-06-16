@@ -38,7 +38,7 @@ export function Header() {
   }
 
   const userDisplayName = settings?.username || user?.email || "Guest"
-  const userAvatarUrl = user?.avatar_url || '/placeholder-user.jpg' // Placeholder if no avatar
+  const userAvatarUrl = user?.user_metadata?.avatar_url || '/placeholder-user.jpg' // Placeholder if no avatar
 
   const isAdmin = settings?.username === 'admin';
 
