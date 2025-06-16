@@ -35,15 +35,12 @@ export function TaskGroupsBubbles({ groups, tasks }: TaskGroupsBubblesProps) {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {groupedTasks.map((group) => (
-          <NedaBubbleGroup
-            key={group.id}
-            group={group}
-            tasks={group.tasks}
-            onClick={() => setSelectedGroup(group.id)}
-          />
-        ))}
+      <div className="w-full"> {/* Ensure NedaBubbleGroup has appropriate container */}
+        <NedaBubbleGroup
+          groups={groups} // Pass the original groups array
+          tasks={tasks}   // Pass the original tasks array
+          onGroupClick={setSelectedGroup} // Pass the handler function
+        />
       </div>
 
       {ungroupedTasks.length > 0 && (
