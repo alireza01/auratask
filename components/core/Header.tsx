@@ -21,36 +21,12 @@ export function Header() {
   const {
     user,
     settings,
-    lastAuraReward,
     toggleSettingsPanel,
     openTaskForm,
-    clearAuraReward,
     darkMode, // Get darkMode state from the store
     setDarkMode, // Get setDarkMode action from the store
   } = useAppStore()
   const { toast } = useToast()
-
-  // Effect for Aura Reward Toast
-  React.useEffect(() => {
-    if (lastAuraReward) {
-      toast({
-        title: "Aura Rewarded!",
-        description: `+${lastAuraReward.points} Aura for ${lastAuraReward.reason}`,
-        // If the toast component from useToast needs a duration or other options,
-        // they would be passed here. For now, relying on Toaster's defaults.
-        // The custom JSX with Sparkles icon and dismiss button is removed as per requirements.
-      })
-
-      // Keep the existing timer to clear the reward state as a fallback.
-      // Ideally, clearAuraReward would be called when the toast is dismissed.
-      // The useToast hook might handle this via its onOpenChange and dismiss logic,
-      // but we're keeping the timeout as per subtask instructions.
-      const timer = setTimeout(() => {
-        clearAuraReward()
-      }, 5500); // Using existing timeout duration
-      return () => clearTimeout(timer);
-    }
-  }, [lastAuraReward, clearAuraReward, toast]) // Added toast to dependency array
 
   const appTheme = settings?.theme || "system" // 'neda', 'alireza', or 'system'
   const currentThemeName = (appTheme === "system" || !appTheme) ? "default" : appTheme;
