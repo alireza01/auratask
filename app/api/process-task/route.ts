@@ -12,6 +12,16 @@ interface AiAnalysisResult {
   emoji: string | null
 }
 
+interface AiAnalysisState {
+  ai_speed_score: number | null;
+  ai_importance_score: number | null;
+  speed_tag: string | null;
+  importance_tag: string | null;
+  emoji: string | null;
+  sub_tasks: string[];
+  ai_generated: boolean;
+}
+
 async function processTaskHandler(request: NextRequest) {
   try {
     const requestBody = await request.json()
@@ -344,16 +354,6 @@ ${
               ...parsedAnalysis,
               ai_generated: true,
             }
-
-interface AiAnalysisState {
-  ai_speed_score: number | null;
-  ai_importance_score: number | null;
-  speed_tag: string | null;
-  importance_tag: string | null;
-  emoji: string | null;
-  sub_tasks: string[];
-  ai_generated: boolean;
-}
 
             // Log successful AI processing
             await supabase.rpc("log_event", {
