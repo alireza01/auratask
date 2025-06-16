@@ -32,6 +32,7 @@ export function TaskDashboard() {
     moveTaskToGroup, // Added moveTaskToGroup
     isTaskFormOpen,
     isGroupFormOpen,
+    closeGroupForm, // Added closeGroupForm
     isTagFormOpen,
     isSettingsPanelOpen,
   } = useAppStore()
@@ -170,7 +171,7 @@ export function TaskDashboard() {
 
         {/* Modals */}
         {isTaskFormOpen && <TaskFormModal />}
-        {isGroupFormOpen && <GroupFormModal />}
+        {isGroupFormOpen && <GroupFormModal open={isGroupFormOpen} onOpenChange={closeGroupForm} />}
         {isTagFormOpen && <TagFormModal />}
         {isSettingsPanelOpen && <SettingsPanel />}
       </div>
