@@ -19,6 +19,8 @@ export interface UserSettings {
   dark_mode?: boolean
   theme?: "default" | "alireza" | "neda"
   haptic_feedback_enabled: boolean;
+  auto_ranking_enabled?: boolean;
+  auto_subtask_enabled?: boolean;
   created_at: string
 }
 

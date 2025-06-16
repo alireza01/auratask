@@ -80,7 +80,6 @@ function DataBlock({ group, tasks, onDelete, onClick }: DataBlockProps) {
           type: "spring",
           stiffness: 300,
           damping: 30,
-          exit: { duration: 0.6, ease: "easeInOut" },
         }}
         whileHover={{
           x: [0, -2, 3, -1, 0],
