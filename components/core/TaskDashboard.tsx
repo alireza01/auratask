@@ -34,6 +34,8 @@ export function TaskDashboard() {
     isGroupFormOpen,
     isTagFormOpen,
     isSettingsPanelOpen,
+    closeGroupForm, // Added
+    editingGroup    // Added
   } = useAppStore()
 
   const { theme } = useTheme(); // Added theme from useTheme
@@ -170,7 +172,7 @@ export function TaskDashboard() {
 
         {/* Modals */}
         {isTaskFormOpen && <TaskFormModal />}
-        {isGroupFormOpen && <GroupFormModal />}
+        {isGroupFormOpen && <GroupFormModal open={isGroupFormOpen} onOpenChange={closeGroupForm} group={editingGroup} />}
         {isTagFormOpen && <TagFormModal />}
         {isSettingsPanelOpen && <SettingsPanel />}
       </div>
