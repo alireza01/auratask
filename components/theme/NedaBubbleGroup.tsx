@@ -10,7 +10,7 @@
 import { useRef, useState, useMemo, useCallback } from "react"
 import { Canvas, useFrame, type ThreeEvent } from "@react-three/fiber"
 import { Html, Sphere, shaderMaterial } from "@react-three/drei"
-import { motion, useSpring, useMotionValue, animate, AnimatePresence } from "framer-motion"
+import { motion, useMotionValue, animate, AnimatePresence } from "framer-motion" // Removed useSpring
 import { useSpring as useReactSpring, animated } from "react-spring"
 import * as THREE from "three"
 import { extend } from "@react-three/fiber"
@@ -212,7 +212,8 @@ function InteractiveBubble({ group, tasks, position, onDelete, onClick }: Intera
   const popProgress = useMotionValue(0)
   const popInstability = useMotionValue(0)
   const jiggleAmount = useMotionValue(0)
-  const scale = useSpring(1, { stiffness: 400, damping: 25 })
+  // const scale = useSpring(1, { stiffness: 400, damping: 25 }) // Old framer-motion spring
+  const [scaleSpring, api] = useReactSpring(() => ({ scale: 1, config: { stiffness: 400, damping: 25 } })) // New react-spring
 
   // React Spring for organic jiggle animation
   const jiggleSpring = useReactSpring({
@@ -244,7 +245,7 @@ function InteractiveBubble({ group, tasks, position, onDelete, onClick }: Intera
     (event: ThreeEvent<PointerEvent>) => {
       event.stopPropagation()
       setIsHeld(true)
-      scale.set(0.9)
+      api.start({ scale: 0.9 }) // Updated scale setting
       triggerHaptic()
 
       const timer = setTimeout(() => {
@@ -257,7 +258,7 @@ function InteractiveBubble({ group, tasks, position, onDelete, onClick }: Intera
 
       setHoldTimer(timer)
     },
-    [isHeld, scale, jiggleAmount, triggerHaptic],
+    [isHeld, api, jiggleAmount, triggerHaptic], // Updated dependencies
   )
 
   const handlePointerUp = useCallback(() => {
@@ -273,9 +274,9 @@ function InteractiveBubble({ group, tasks, position, onDelete, onClick }: Intera
 
     setIsHeld(false)
     setDeleteReady(false)
-    scale.set(1)
+    api.start({ scale: 1 }) // Updated scale setting
     jiggleAmount.set(0)
-  }, [holdTimer, deleteReady, isPopping, onClick, scale, jiggleAmount, triggerHaptic])
+  }, [holdTimer, deleteReady, isPopping, onClick, api, jiggleAmount, triggerHaptic]) // Updated dependencies
 
   const handleDelete = useCallback(async () => {
     setIsPopping(true)
@@ -288,16 +289,16 @@ function InteractiveBubble({ group, tasks, position, onDelete, onClick }: Intera
     await Promise.all([
       animate(popProgress, 1, { duration: 0.6, ease: "easeOut" }),
       animate(popInstability, 1, { duration: 0.4, ease: "easeOut" }),
-      animate(scale, 0, { duration: 0.6, ease: "easeIn" }),
+      api.start({ scale: 0, config: { duration: 600 } }), // Updated scale animation
     ])
 
     onDelete()
-  }, [popProgress, popInstability, scale, onDelete, triggerHaptic])
+  }, [popProgress, popInstability, api, onDelete, triggerHaptic]) // Updated dependencies
 
   return (
     <>
       <animated.group position={position} rotation={jiggleSpring.rotation as any}>
-        <animated.group scale={scale}>
+        <animated.group scale={scaleSpring.scale}> {/* Updated scale prop usage */}
           <Sphere
             ref={meshRef}
             args={[1, 32, 32]}
