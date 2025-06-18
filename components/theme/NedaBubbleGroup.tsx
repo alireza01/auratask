@@ -1,4 +1,4 @@
-// components/theme/NedaBubbleGroup.tsx
+// alireza01/auratask/auratask-28ecc72e0305e315df0a1f5b0618e2b9c07e5ded/components/theme/NedaBubbleGroup.tsx
 /**
  * NedaBubbleGroup - Renders a 3D interactive scene of task groups as floating bubbles.
  * Uses React Three Fiber for 3D rendering and Framer Motion for animations.
@@ -19,6 +19,7 @@ import { useAppStore } from "@/lib/store"
 import { Badge } from "@/components/ui/badge"
 import { Trash2, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useTranslations } from "next-intl"
 
 const BubbleMaterial = shaderMaterial(
   {
@@ -400,6 +401,7 @@ interface NedaBubbleGroupProps {
 
 export function NedaBubbleGroup({ groups, tasks, onGroupClick }: NedaBubbleGroupProps) {
   const { deleteGroup } = useAppStore()
+  const t = useTranslations("storeActions")
 
   const groupedTasks = groups.map((group) => ({
     ...group,
@@ -426,7 +428,11 @@ export function NedaBubbleGroup({ groups, tasks, onGroupClick }: NedaBubbleGroup
               group={group}
               tasks={group.tasks}
               position={[x, y, z]}
-              onDelete={() => deleteGroup(group.id)}
+              onDelete={() => {
+                const tSuccess = t("deleteGroupSuccess")
+                const tError = t("deleteGroupError")
+                deleteGroup(group.id, tSuccess, tError)
+              }}
               onClick={() => onGroupClick(group.id)}
             />
           )
