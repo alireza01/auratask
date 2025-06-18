@@ -257,7 +257,7 @@ function InteractiveBubble({ group, tasks, position, onDelete, onClick }: Intera
 
       setHoldTimer(timer)
     },
-    [isHeld, scale, jiggleAmount, triggerHaptic],
+    [isHeld, scaleApi, jiggleAmount, triggerHaptic],
   )
 
   const handlePointerUp = useCallback(() => {
