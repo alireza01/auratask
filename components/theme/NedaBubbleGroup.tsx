@@ -389,7 +389,7 @@ function InteractiveBubble({ group, tasks, position, onDelete, onClick }: Intera
         <PopParticles position={position} color={group.color || "#ff6b9d"} onComplete={() => setShowParticles(false)} />
       )}
     </>
-  )
+  );
 }
 
 interface NedaBubbleGroupProps {
