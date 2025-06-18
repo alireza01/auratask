@@ -138,7 +138,7 @@ function DataStreamPlane() {
 
   return (
     <Plane args={[2, 2]}>
-      <alirezaBackgroundMaterial ref={materialRef} />
+      <AlirezaBackgroundMaterial ref={materialRef} />
     </Plane>
   )
 }
