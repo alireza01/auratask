@@ -24,6 +24,7 @@ interface TaskCardProps {
 export function TaskCard({ task, className }: TaskCardProps) {
   const { toast } = useToast()
   const { updateTask } = useAppStore()
+  const t = useTranslations("TaskCard") // Initialize t here
   const [loading, setLoading] = useState(false)
   const [justCompleted, setJustCompleted] = useState(false)
 
