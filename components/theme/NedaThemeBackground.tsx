@@ -1,3 +1,4 @@
+// alireza01/auratask/auratask-28ecc72e0305e315df0a1f5b0618e2b9c07e5ded/components/theme/NedaThemeBackground.tsx
 "use client"
 
 import { useRef } from "react"
@@ -140,7 +141,7 @@ const NedaBackgroundMaterial = shaderMaterial(
 extend({ NedaBackgroundMaterial })
 
 function BackgroundPlane() {
-  const materialRef = useRef<any>()
+  const materialRef = useRef<any>(null)
   const { size } = useThree()
 
   useFrame((state) => {
