@@ -312,77 +312,76 @@ function InteractiveBubble({ group, tasks, position, onDelete, onClick }: Intera
               side={THREE.DoubleSide}
             />
           </Sphere>
-
-          <Html
-            center
-            distanceFactor={8}
-            style={{
-              pointerEvents: deleteReady ? "auto" : "none",
-              userSelect: "none",
-            }}
-          >
-            <div className="flex flex-col items-center space-y-3 text-center">
-              <motion.div
-                className="text-5xl"
-                animate={{
-                  scale: deleteReady ? [1, 1.2, 1] : 1,
-                  rotate: deleteReady ? [0, 5, -5, 0] : 0,
-                }}
-                transition={{
-                  duration: 0.5,
-                  repeat: deleteReady ? Number.POSITIVE_INFINITY : 0,
-                }}
-              >
-                {group.emoji}
-              </motion.div>
-
-              <h3 className="font-bold text-xl text-white drop-shadow-lg tracking-wide">{group.name}</h3>
-
-              <div className="flex gap-2 flex-wrap justify-center">
-                <Badge className="bg-white/25 backdrop-blur-md text-white border-white/30 shadow-lg">
-                  <Sparkles className="w-3 h-3 mr-1" />
-                  {totalTasks} وظیفه
-                </Badge>
-                {completedTasks > 0 && (
-                  <Badge className="bg-emerald-500/80 backdrop-blur-md text-white shadow-lg">
-                    ✓ {completedTasks} تکمیل
-                  </Badge>
-                )}
-              </div>
-
-              {totalTasks > 0 && (
-                <div className="w-28 bg-white/20 rounded-full h-3 backdrop-blur-md shadow-inner">
-                  <motion.div
-                    className="bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400 h-3 rounded-full shadow-sm"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${completionPercentage}%` }}
-                    transition={{ duration: 1, ease: "easeOut" }}
-                  />
-                </div>
-              )}
-
-              <AnimatePresence>
-                {deleteReady && (
-                  <motion.button
-                    initial={{ scale: 0, opacity: 0, y: 10 }}
-                    animate={{ scale: 1, opacity: 1, y: 0 }}
-                    exit={{ scale: 0, opacity: 0, y: 10 }}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={handleDelete}
-                    className={cn(
-                      "mt-3 p-3 bg-red-500/90 backdrop-blur-md rounded-full text-white",
-                      "hover:bg-red-600/90 transition-all duration-200 shadow-lg",
-                      "border border-red-400/50",
-                    )}
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </motion.button>
-                )}
-              </AnimatePresence>
-            </div>
-          </Html>
         </motion.group>
+        <Html
+          center
+          distanceFactor={8}
+          style={{
+            pointerEvents: deleteReady ? "auto" : "none",
+            userSelect: "none",
+          }}
+        >
+          <div className="flex flex-col items-center space-y-3 text-center">
+            <motion.div
+              className="text-5xl"
+              animate={{
+                scale: deleteReady ? [1, 1.2, 1] : 1,
+                rotate: deleteReady ? [0, 5, -5, 0] : 0,
+              }}
+              transition={{
+                duration: 0.5,
+                repeat: deleteReady ? Number.POSITIVE_INFINITY : 0,
+              }}
+            >
+              {group.emoji}
+            </motion.div>
+
+            <h3 className="font-bold text-xl text-white drop-shadow-lg tracking-wide">{group.name}</h3>
+
+            <div className="flex gap-2 flex-wrap justify-center">
+              <Badge className="bg-white/25 backdrop-blur-md text-white border-white/30 shadow-lg">
+                <Sparkles className="w-3 h-3 mr-1" />
+                {totalTasks} وظیفه
+              </Badge>
+              {completedTasks > 0 && (
+                <Badge className="bg-emerald-500/80 backdrop-blur-md text-white shadow-lg">
+                  ✓ {completedTasks} تکمیل
+                </Badge>
+              )}
+            </div>
+
+            {totalTasks > 0 && (
+              <div className="w-28 bg-white/20 rounded-full h-3 backdrop-blur-md shadow-inner">
+                <motion.div
+                  className="bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400 h-3 rounded-full shadow-sm"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${completionPercentage}%` }}
+                  transition={{ duration: 1, ease: "easeOut" }}
+                />
+              </div>
+            )}
+
+            <AnimatePresence>
+              {deleteReady && (
+                <motion.button
+                  initial={{ scale: 0, opacity: 0, y: 10 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  exit={{ scale: 0, opacity: 0, y: 10 }}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handleDelete}
+                  className={cn(
+                    "mt-3 p-3 bg-red-500/90 backdrop-blur-md rounded-full text-white",
+                    "hover:bg-red-600/90 transition-all duration-200 shadow-lg",
+                    "border border-red-400/50",
+                  )}
+                >
+                  <Trash2 className="w-5 h-5" />
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </div>
+        </Html>
       </animated.group>
 
       {showParticles && (
