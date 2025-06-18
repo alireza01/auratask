@@ -312,7 +312,7 @@ function InteractiveBubble({ group, tasks, position, onDelete, onClick }: Intera
               side={THREE.DoubleSide}
             />
           </Sphere>
-        </motion.group>
+        </animated.group>
         <Html
           center
           distanceFactor={8}
