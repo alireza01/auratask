@@ -1,10 +1,10 @@
+// components/theme/NedaThemeBackground.tsx
 "use client"
 
 import { useRef } from "react"
-import { Canvas, useFrame, useThree } from "@react-three/fiber"
+import { Canvas, useFrame, useThree, extend, type ThreeElement } from "@react-three/fiber" // Added ThreeElement
 import { Plane, shaderMaterial } from "@react-three/drei"
 import * as THREE from "three"
-import { extend } from "@react-three/fiber"
 
 const NedaBackgroundMaterial = shaderMaterial(
   {
@@ -139,10 +139,12 @@ const NedaBackgroundMaterial = shaderMaterial(
 
 extend({ NedaBackgroundMaterial })
 
-// Add this module declaration to fix the TypeScript error
 declare module "@react-three/fiber" {
   interface ThreeElements {
-    nedaBackgroundMaterial: React.ComponentProps<typeof NedaBackgroundMaterial>
+    nedaBackgroundMaterial: ThreeElement<typeof NedaBackgroundMaterial & {
+      uTime?: number;
+      uResolution?: THREE.Vector2;
+    }>;
   }
 }
 
