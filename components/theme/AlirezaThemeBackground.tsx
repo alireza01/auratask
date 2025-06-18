@@ -1,171 +1,125 @@
-"use client"
+"use client";
+import * as THREE from 'three';
+import { Canvas, extend, useFrame } from '@react-three/fiber';
+import { shaderMaterial } from '@react-three/drei';
+import { useTheme } from 'next-themes';
+import { useMemo, useRef } from 'react';
+import { MaterialNode } from '@react-three/fiber';
 
-import { useRef, useEffect, useState } from "react"
-import { Canvas, useFrame, useThree, ReactThreeFiber } from "@react-three/fiber"
-import { Plane, shaderMaterial } from "@react-three/drei"
-import * as THREE from "three"
-import { extend } from "@react-three/fiber"
-
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      alirezaBackgroundMaterial: ReactThreeFiber.Node<typeof AlirezaBackgroundMaterial, typeof AlirezaBackgroundMaterial.key> & {
-        uTime?: number;
-        uResolution?: THREE.Vector2;
-        uMouse?: THREE.Vector2;
-      }
-    }
-  }
-}
-
+// Define the shader material using drei's shaderMaterial helper
 const AlirezaBackgroundMaterial = shaderMaterial(
+  // Uniforms
   {
     uTime: 0,
     uResolution: new THREE.Vector2(),
     uMouse: new THREE.Vector2(),
+    uColor1: new THREE.Color('#ff0000'), // Default color
+    uColor2: new THREE.Color('#0000ff'), // Default color
   },
-  // Vertex shader
+  // Vertex Shader
   `
-    varying vec2 vUv;
-    void main() {
-      vUv = uv;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    }
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
   `,
-  // Fragment shader - Digital data stream
+  // Fragment Shader
   `
-    uniform float uTime;
-    uniform vec2 uResolution;
-    uniform vec2 uMouse;
-    varying vec2 vUv;
+  uniform float uTime;
+  uniform vec2 uResolution;
+  uniform vec2 uMouse;
+  uniform vec3 uColor1;
+  uniform vec3 uColor2;
+  varying vec2 vUv;
 
-    // Random function
-    float random(vec2 st) {
-      return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+  // GLSL noise function
+  float noise(vec2 p) {
+    return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+  }
+
+  void main() {
+    vec2 st = gl_FragCoord.xy / uResolution.xy;
+    st.x *= uResolution.x / uResolution.y;
+
+    vec3 color = mix(uColor1, uColor2, vUv.y);
+
+    float n = noise(vUv * 10.0 + uTime * 0.1);
+    color += n * 0.1;
+
+    gl_FragColor = vec4(color, 1.0);
+  }
+  `
+);
+
+// Extend Three.js with our custom material
+extend({ AlirezaBackgroundMaterial });
+
+// Typing for our custom material
+// This is the main fix for the original error.
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      alirezaBackgroundMaterial: MaterialNode<
+        typeof AlirezaBackgroundMaterial & {
+          uTime?: number;
+          uResolution?: THREE.Vector2;
+          uMouse?: THREE.Vector2;
+          uColor1?: THREE.Color;
+          uColor2?: THREE.Color;
+        },
+        typeof AlirezaBackgroundMaterial
+      >;
     }
-
-    // Noise function
-    float noise(vec2 st) {
-      vec2 i = floor(st);
-      vec2 f = fract(st);
-      
-      float a = random(i);
-      float b = random(i + vec2(1.0, 0.0));
-      float c = random(i + vec2(0.0, 1.0));
-      float d = random(i + vec2(1.0, 1.0));
-      
-      vec2 u = f * f * (3.0 - 2.0 * f);
-      
-      return mix(a, b, u.x) + (c - a)* u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
-    }
-
-    void main() {
-      vec2 st = vUv;
-      vec2 mouse = uMouse / uResolution;
-      
-      // Base dark color - deep charcoal
-      vec3 baseColor = vec3(0.05, 0.05, 0.08);
-      
-      // Electric yellow accent
-      vec3 yellowAccent = vec3(1.0, 0.84, 0.04); // #FFD60A
-      
-      // Magenta and cyan glitch colors
-      vec3 magentaGlitch = vec3(1.0, 0.0, 0.5);
-      vec3 cyanGlitch = vec3(0.0, 1.0, 1.0);
-      
-      // Create grid pattern
-      vec2 grid = fract(st * 20.0);
-      float gridLines = step(0.95, grid.x) + step(0.95, grid.y);
-      
-      // Data stream effect
-      float stream1 = noise(vec2(st.x * 5.0, st.y * 10.0 - uTime * 2.0));
-      float stream2 = noise(vec2(st.x * 8.0, st.y * 15.0 - uTime * 1.5));
-      float stream3 = noise(vec2(st.x * 12.0, st.y * 8.0 - uTime * 3.0));
-      
-      // Combine streams
-      float dataFlow = (stream1 + stream2 + stream3) / 3.0;
-      dataFlow = smoothstep(0.4, 0.8, dataFlow);
-      
-      // Mouse interaction - intensify effects near cursor
-      float mouseDistance = distance(st, mouse);
-      float mouseInfluence = 1.0 - smoothstep(0.0, 0.3, mouseDistance);
-      
-      // Glitch effect
-      float glitchNoise = random(vec2(floor(st.y * 50.0), floor(uTime * 10.0)));
-      float glitch = step(0.98, glitchNoise) * mouseInfluence;
-      
-      // Build final color
-      vec3 finalColor = baseColor;
-      
-      // Add grid
-      finalColor = mix(finalColor, yellowAccent * 0.3, gridLines * 0.1);
-      
-      // Add data streams
-      finalColor = mix(finalColor, yellowAccent, dataFlow * 0.4);
-      
-      // Add mouse interaction glow
-      finalColor = mix(finalColor, yellowAccent, mouseInfluence * 0.2);
-      
-      // Add glitch effects
-      if (glitch > 0.5) {
-        finalColor.r = mix(finalColor.r, magentaGlitch.r, 0.8);
-        finalColor.g = mix(finalColor.g, cyanGlitch.g, 0.6);
-      }
-      
-      // Subtle scanlines
-      float scanline = sin(st.y * 800.0 + uTime * 5.0) * 0.02;
-      finalColor += scanline;
-      
-      gl_FragColor = vec4(finalColor, 1.0);
-    }
-  `,
-)
-
-extend({ AlirezaBackgroundMaterial })
-
-function DataStreamPlane() {
-  const materialRef = useRef<any>(null)
-  const { size } = useThree()
-  const [mouse, setMouse] = useState({ x: 0, y: 0 })
-
-  useEffect(() => {
-    const handleMouseMove = (event: MouseEvent) => {
-      setMouse({
-        x: event.clientX,
-        y: event.clientY,
-      })
-    }
-
-    window.addEventListener("mousemove", handleMouseMove)
-    return () => window.removeEventListener("mousemove", handleMouseMove)
-  }, [])
-
-  useFrame((state) => {
-    if (materialRef.current) {
-      materialRef.current.uTime = state.clock.elapsedTime
-      materialRef.current.uResolution.set(size.width, size.height)
-      materialRef.current.uMouse.set(mouse.x, size.height - mouse.y)
-    }
-  })
-
-  return (
-    <Plane args={[2, 2]}>
-      <AlirezaBackgroundMaterial ref={materialRef} />
-    </Plane>
-  )
+  }
 }
 
-export function AlirezaThemeBackground() {
+const Scene = () => {
+  // We use a properly typed ref for our material
+  const materialRef = useRef<THREE.ShaderMaterial & typeof AlirezaBackgroundMaterial>(null);
+  const { theme } = useTheme();
+
+  // We use useMemo to efficiently update colors when the theme changes
+  const colors = useMemo(() => {
+    // Check for system theme preference as well
+    const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (isDark) {
+      return {
+        color1: new THREE.Color('#1E293B'), // Dark Slate
+        color2: new THREE.Color('#0F172A'), // Darker Slate
+      };
+    }
+    return {
+      color1: new THREE.Color('#F1F5F9'), // Light Slate
+      color2: new THREE.Color('#E2E8F0'), // Lighter Slate
+    };
+  }, [theme]);
+
+  // useFrame runs on every frame, perfect for animations
+  useFrame((state, delta) => {
+    if (materialRef.current) {
+      materialRef.current.uniforms.uTime.value += delta;
+      materialRef.current.uniforms.uResolution.value.x = state.viewport.width * state.viewport.dpr;
+      materialRef.current.uniforms.uResolution.value.y = state.viewport.height * state.viewport.dpr;
+      materialRef.current.uniforms.uMouse.value = state.mouse;
+    }
+  });
+
   return (
-    <div className="fixed inset-0 -z-10">
-      <Canvas
-        camera={{ position: [0, 0, 1], fov: 75 }}
-        style={{ width: "100vw", height: "100vh" }}
-        dpr={[1, 2]}
-        performance={{ min: 0.5 }}
-      >
-        <DataStreamPlane />
+    <mesh>
+      <planeGeometry args={[2, 2]} />
+      {/* We pass the theme colors as props to our material */}
+      <alirezaBackgroundMaterial ref={materialRef} uColor1={colors.color1} uColor2={colors.color2} />
+    </mesh>
+  );
+};
+
+export const AlirezaThemeBackground = () => {
+  return (
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: -1 }}>
+      <Canvas>
+        <Scene />
       </Canvas>
     </div>
-  )
-}
+  );
+};
