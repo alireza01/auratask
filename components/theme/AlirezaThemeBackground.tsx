@@ -4,7 +4,7 @@ import { Canvas, extend, useFrame } from '@react-three/fiber';
 import { shaderMaterial } from '@react-three/drei';
 import { useTheme } from 'next-themes';
 import { useMemo, useRef } from 'react';
-import { MaterialNode } from '@react-three/fiber';
+import { type ThreeElement } from '@react-three/fiber';
 
 // Define the shader material using drei's shaderMaterial helper
 const AlirezaBackgroundMaterial = shaderMaterial(
@@ -57,20 +57,15 @@ extend({ AlirezaBackgroundMaterial });
 
 // Typing for our custom material
 // This is the main fix for the original error.
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      alirezaBackgroundMaterial: MaterialNode<
-        typeof AlirezaBackgroundMaterial & {
-          uTime?: number;
-          uResolution?: THREE.Vector2;
-          uMouse?: THREE.Vector2;
-          uColor1?: THREE.Color;
-          uColor2?: THREE.Color;
-        },
-        typeof AlirezaBackgroundMaterial
-      >;
-    }
+declare module '@react-three/fiber' {
+  interface ThreeElements {
+    alirezaBackgroundMaterial: ThreeElement<typeof AlirezaBackgroundMaterial & {
+      uTime?: number;
+      uResolution?: THREE.Vector2;
+      uMouse?: THREE.Vector2;
+      uColor1?: THREE.Color;
+      uColor2?: THREE.Color;
+    }>;
   }
 }
 
