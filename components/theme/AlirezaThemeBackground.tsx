@@ -1,10 +1,22 @@
 "use client"
 
 import { useRef, useEffect, useState } from "react"
-import { Canvas, useFrame, useThree } from "@react-three/fiber"
+import { Canvas, useFrame, useThree, ReactThreeFiber } from "@react-three/fiber"
 import { Plane, shaderMaterial } from "@react-three/drei"
 import * as THREE from "three"
 import { extend } from "@react-three/fiber"
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      alirezaBackgroundMaterial: ReactThreeFiber.Node<typeof AlirezaBackgroundMaterial, typeof AlirezaBackgroundMaterial.key> & {
+        uTime?: number;
+        uResolution?: THREE.Vector2;
+        uMouse?: THREE.Vector2;
+      }
+    }
+  }
+}
 
 const AlirezaBackgroundMaterial = shaderMaterial(
   {
@@ -112,7 +124,7 @@ const AlirezaBackgroundMaterial = shaderMaterial(
 extend({ AlirezaBackgroundMaterial })
 
 function DataStreamPlane() {
-  const materialRef = useRef<any>()
+  const materialRef = useRef<any>(null)
   const { size } = useThree()
   const [mouse, setMouse] = useState({ x: 0, y: 0 })
 
@@ -138,7 +150,7 @@ function DataStreamPlane() {
 
   return (
     <Plane args={[2, 2]}>
-      <alirezaBackgroundMaterial ref={materialRef} />
+      <AlirezaBackgroundMaterial ref={materialRef} />
     </Plane>
   )
 }
