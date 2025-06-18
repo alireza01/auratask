@@ -202,7 +202,7 @@ interface InteractiveBubbleProps {
 
 function InteractiveBubble({ group, tasks, position, onDelete, onClick }: InteractiveBubbleProps) {
   const meshRef = useRef<THREE.Mesh>(null)
-  const materialRef = useRef<any>()
+  const materialRef = useRef<any>(null)
   const [isHeld, setIsHeld] = useState(false)
   const [deleteReady, setDeleteReady] = useState(false)
   const [isPopping, setIsPopping] = useState(false)
