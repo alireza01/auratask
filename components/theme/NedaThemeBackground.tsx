@@ -1,4 +1,3 @@
-// alireza01/auratask/auratask-28ecc72e0305e315df0a1f5b0618e2b9c07e5ded/components/theme/NedaThemeBackground.tsx
 "use client"
 
 import { useRef } from "react"
@@ -135,10 +134,17 @@ const NedaBackgroundMaterial = shaderMaterial(
       
       gl_FragColor = vec4(finalColor, 1.0);
     }
-  `,
+  `
 )
 
 extend({ NedaBackgroundMaterial })
+
+// Add this module declaration to fix the TypeScript error
+declare module "@react-three/fiber" {
+  interface ThreeElements {
+    nedaBackgroundMaterial: React.ComponentProps<typeof NedaBackgroundMaterial>
+  }
+}
 
 function BackgroundPlane() {
   const materialRef = useRef<any>(null)
