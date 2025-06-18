@@ -297,7 +297,7 @@ function InteractiveBubble({ group, tasks, position, onDelete, onClick }: Intera
   return (
     <>
       <animated.group position={position} rotation={jiggleSpring.rotation as any}>
-        <motion.group scale={scale}>
+        <animated.group scale={scale}>
           <Sphere
             ref={meshRef}
             args={[1, 32, 32]}
