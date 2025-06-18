@@ -9,9 +9,12 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { supabase } from "@/lib/supabase-client"
 import { useAppStore } from "@/lib/store"
-import { Clock, Star, MoreHorizontal, CheckCircle2 } from "lucide-react"
+import { Clock, Star, MoreHorizontal, CheckCircle2, ListTree, ChevronDown } from "lucide-react" // Added ListTree, ChevronDown
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible" // Added Collapsible
+import { SubtaskList } from "./SubtaskList" // Added SubtaskList
+import { useTranslations } from "next-intl" // Added useTranslations
 
 interface TaskCardProps {
   task: Task
@@ -21,6 +24,7 @@ interface TaskCardProps {
 export function TaskCard({ task, className }: TaskCardProps) {
   const { toast } = useToast()
   const { updateTask } = useAppStore()
+  const t = useTranslations("TaskCard") // Initialize t here
   const [loading, setLoading] = useState(false)
   const [justCompleted, setJustCompleted] = useState(false)
 
@@ -160,6 +164,24 @@ export function TaskCard({ task, className }: TaskCardProps) {
                   </Badge>
                 )}
               </motion.div>
+
+              {/* Subtasks Section */}
+              {task.subtasks && task.subtasks.length > 0 && (
+                <Collapsible className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="flex items-center justify-between w-full px-1 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md">
+                      <span className="flex items-center">
+                        <ListTree className="h-4 w-4 mr-2" />
+                        {`${task.subtasks.filter(st => st.is_completed).length} / ${task.subtasks.length} ${t("subtasksComplete")}`}
+                      </span>
+                      <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-2">
+                    <SubtaskList subtasks={task.subtasks} taskId={task.id} />
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
             </div>
           </div>
         </CardContent>
