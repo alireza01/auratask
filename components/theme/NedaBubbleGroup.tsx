@@ -10,7 +10,7 @@
 import { useRef, useState, useMemo, useCallback } from "react"
 import { Canvas, useFrame, type ThreeEvent } from "@react-three/fiber"
 import { Html, Sphere, shaderMaterial } from "@react-three/drei"
-import { motion, useSpring, useMotionValue, animate, AnimatePresence } from "framer-motion"
+import { motion, useMotionValue, animate, AnimatePresence } from "framer-motion" // Removed useSpring
 import { useSpring as useReactSpring, animated } from "react-spring"
 import * as THREE from "three"
 import { extend } from "@react-three/fiber"
@@ -202,7 +202,7 @@ interface InteractiveBubbleProps {
 
 function InteractiveBubble({ group, tasks, position, onDelete, onClick }: InteractiveBubbleProps) {
   const meshRef = useRef<THREE.Mesh>(null)
-  const materialRef = useRef<any>()
+  const materialRef = useRef<any>(null)
   const [isHeld, setIsHeld] = useState(false)
   const [deleteReady, setDeleteReady] = useState(false)
   const [isPopping, setIsPopping] = useState(false)
@@ -212,7 +212,8 @@ function InteractiveBubble({ group, tasks, position, onDelete, onClick }: Intera
   const popProgress = useMotionValue(0)
   const popInstability = useMotionValue(0)
   const jiggleAmount = useMotionValue(0)
-  const scale = useSpring(1, { stiffness: 400, damping: 25 })
+  // const scale = useSpring(1, { stiffness: 400, damping: 25 }) // Old framer-motion spring
+  const [scaleSpring, api] = useReactSpring(() => ({ scale: 1, config: { stiffness: 400, damping: 25 } })) // New react-spring
 
   // React Spring for organic jiggle animation
   const jiggleSpring = useReactSpring({
@@ -244,7 +245,7 @@ function InteractiveBubble({ group, tasks, position, onDelete, onClick }: Intera
     (event: ThreeEvent<PointerEvent>) => {
       event.stopPropagation()
       setIsHeld(true)
-      scale.set(0.9)
+      api.start({ scale: 0.9 }) // Updated scale setting
       triggerHaptic()
 
       const timer = setTimeout(() => {
@@ -257,7 +258,7 @@ function InteractiveBubble({ group, tasks, position, onDelete, onClick }: Intera
 
       setHoldTimer(timer)
     },
-    [isHeld, scale, jiggleAmount, triggerHaptic],
+    [isHeld, api, jiggleAmount, triggerHaptic], // Updated dependencies
   )
 
   const handlePointerUp = useCallback(() => {
@@ -273,9 +274,9 @@ function InteractiveBubble({ group, tasks, position, onDelete, onClick }: Intera
 
     setIsHeld(false)
     setDeleteReady(false)
-    scale.set(1)
+    api.start({ scale: 1 }) // Updated scale setting
     jiggleAmount.set(0)
-  }, [holdTimer, deleteReady, isPopping, onClick, scale, jiggleAmount, triggerHaptic])
+  }, [holdTimer, deleteReady, isPopping, onClick, api, jiggleAmount, triggerHaptic]) // Updated dependencies
 
   const handleDelete = useCallback(async () => {
     setIsPopping(true)
@@ -288,16 +289,16 @@ function InteractiveBubble({ group, tasks, position, onDelete, onClick }: Intera
     await Promise.all([
       animate(popProgress, 1, { duration: 0.6, ease: "easeOut" }),
       animate(popInstability, 1, { duration: 0.4, ease: "easeOut" }),
-      animate(scale, 0, { duration: 0.6, ease: "easeIn" }),
+      api.start({ scale: 0, config: { duration: 600 } }), // Updated scale animation
     ])
 
     onDelete()
-  }, [popProgress, popInstability, scale, onDelete, triggerHaptic])
+  }, [popProgress, popInstability, api, onDelete, triggerHaptic]) // Updated dependencies
 
   return (
     <>
-      <animated.group position={position} rotation={jiggleSpring.rotation}>
-        <motion.group scale={scale}>
+      <animated.group position={position} rotation={jiggleSpring.rotation as any}>
+        <animated.group scale={scaleSpring.scale}> {/* Updated scale prop usage */}
           <Sphere
             ref={meshRef}
             args={[1, 32, 32]}
@@ -305,84 +306,83 @@ function InteractiveBubble({ group, tasks, position, onDelete, onClick }: Intera
             onPointerUp={handlePointerUp}
             onPointerLeave={handlePointerUp}
           >
-            <bubbleMaterial
+            <BubbleMaterial
               ref={materialRef}
               uColor={new THREE.Color(group.color || "#ff6b9d")}
               transparent
               side={THREE.DoubleSide}
             />
           </Sphere>
+        </animated.group>
+        <Html
+          center
+          distanceFactor={8}
+          style={{
+            pointerEvents: deleteReady ? "auto" : "none",
+            userSelect: "none",
+          }}
+        >
+          <div className="flex flex-col items-center space-y-3 text-center">
+            <motion.div
+              className="text-5xl"
+              animate={{
+                scale: deleteReady ? [1, 1.2, 1] : 1,
+                rotate: deleteReady ? [0, 5, -5, 0] : 0,
+              }}
+              transition={{
+                duration: 0.5,
+                repeat: deleteReady ? Number.POSITIVE_INFINITY : 0,
+              }}
+            >
+              {group.emoji}
+            </motion.div>
 
-          <Html
-            center
-            distanceFactor={8}
-            style={{
-              pointerEvents: deleteReady ? "auto" : "none",
-              userSelect: "none",
-            }}
-          >
-            <div className="flex flex-col items-center space-y-3 text-center">
-              <motion.div
-                className="text-5xl"
-                animate={{
-                  scale: deleteReady ? [1, 1.2, 1] : 1,
-                  rotate: deleteReady ? [0, 5, -5, 0] : 0,
-                }}
-                transition={{
-                  duration: 0.5,
-                  repeat: deleteReady ? Number.POSITIVE_INFINITY : 0,
-                }}
-              >
-                {group.emoji}
-              </motion.div>
+            <h3 className="font-bold text-xl text-white drop-shadow-lg tracking-wide">{group.name}</h3>
 
-              <h3 className="font-bold text-xl text-white drop-shadow-lg tracking-wide">{group.name}</h3>
-
-              <div className="flex gap-2 flex-wrap justify-center">
-                <Badge className="bg-white/25 backdrop-blur-md text-white border-white/30 shadow-lg">
-                  <Sparkles className="w-3 h-3 mr-1" />
-                  {totalTasks} وظیفه
+            <div className="flex gap-2 flex-wrap justify-center">
+              <Badge className="bg-white/25 backdrop-blur-md text-white border-white/30 shadow-lg">
+                <Sparkles className="w-3 h-3 mr-1" />
+                {totalTasks} وظیفه
+              </Badge>
+              {completedTasks > 0 && (
+                <Badge className="bg-emerald-500/80 backdrop-blur-md text-white shadow-lg">
+                  ✓ {completedTasks} تکمیل
                 </Badge>
-                {completedTasks > 0 && (
-                  <Badge className="bg-emerald-500/80 backdrop-blur-md text-white shadow-lg">
-                    ✓ {completedTasks} تکمیل
-                  </Badge>
-                )}
-              </div>
-
-              {totalTasks > 0 && (
-                <div className="w-28 bg-white/20 rounded-full h-3 backdrop-blur-md shadow-inner">
-                  <motion.div
-                    className="bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400 h-3 rounded-full shadow-sm"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${completionPercentage}%` }}
-                    transition={{ duration: 1, ease: "easeOut" }}
-                  />
-                </div>
               )}
-
-              <AnimatePresence>
-                {deleteReady && (
-                  <motion.button
-                    initial={{ scale: 0, opacity: 0, y: 10 }}
-                    animate={{ scale: 1, opacity: 1, y: 0 }}
-                    exit={{ scale: 0, opacity: 0, y: 10 }}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={handleDelete}
-                    className={cn(
-                      "mt-3 p-3 bg-red-500/90 backdrop-blur-md rounded-full text-white",
-                      "hover:bg-red-600/90 transition-all duration-200 shadow-lg",
-                      "border border-red-400/50",
-                    )}
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </motion.button>
-                )}
-              </AnimatePresence>
             </div>
-          </Html>
-        </motion.group>
+
+            {totalTasks > 0 && (
+              <div className="w-28 bg-white/20 rounded-full h-3 backdrop-blur-md shadow-inner">
+                <motion.div
+                  className="bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400 h-3 rounded-full shadow-sm"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${completionPercentage}%` }}
+                  transition={{ duration: 1, ease: "easeOut" }}
+                />
+              </div>
+            )}
+
+            <AnimatePresence>
+              {deleteReady && (
+                <motion.button
+                  initial={{ scale: 0, opacity: 0, y: 10 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  exit={{ scale: 0, opacity: 0, y: 10 }}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handleDelete}
+                  className={cn(
+                    "mt-3 p-3 bg-red-500/90 backdrop-blur-md rounded-full text-white",
+                    "hover:bg-red-600/90 transition-all duration-200 shadow-lg",
+                    "border border-red-400/50",
+                  )}
+                >
+                  <Trash2 className="w-5 h-5" />
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </div>
+        </Html>
       </animated.group>
 
       {showParticles && (
