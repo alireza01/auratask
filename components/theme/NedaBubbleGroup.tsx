@@ -306,7 +306,7 @@ function InteractiveBubble({ group, tasks, position, onDelete, onClick }: Intera
             onPointerUp={handlePointerUp}
             onPointerLeave={handlePointerUp}
           >
-            <BubbleMaterial
+            <bubbleMaterial
               ref={materialRef}
               uColor={new THREE.Color(group.color || "#ff6b9d")}
               transparent

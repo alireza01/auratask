@@ -357,8 +357,11 @@ export const useAppStore = create<AppState>()(
         },
 
         // Task Actions
-        addTask: async (taskData) => {
-          const { user, tasks: currentTasks } = get() // Added tasks to get current list
+        addTask: async (taskDataWithPotentialSubtasks) => { // Renamed for clarity
+          const { user, tasks: currentTasks } = get()
+
+          // Destructure sub_tasks (expected to be string[]) from the input
+          const { sub_tasks: subTaskTitles, ...actualTaskData } = taskDataWithPotentialSubtasks as Omit<Task, "id" | "created_at" | "updated_at"> & { sub_tasks?: string[] };
 
           try {
             // Calculate new order_index
@@ -369,26 +372,55 @@ export const useAppStore = create<AppState>()(
               toast.error("User not identified. Cannot add task.");
               return;
             }
-            const insertData = { ...taskData, user_id: user.id, order_index: newOrderIndex };
+            const insertData = { ...actualTaskData, user_id: user.id, order_index: newOrderIndex };
 
-            const { data, error } = await supabase
+            // Insert the main task
+            const { data: newTask, error: taskError } = await supabase
               .from("tasks")
               .insert([insertData])
               .select(`
                 *,
-                subtasks:sub_tasks(*),
                 group:groups(*)
-              `)
+              `) // Initially select without subtasks, as they are added next
               .single()
 
-            if (error) throw error
+            if (taskError) throw taskError
+            if (!newTask) throw new Error("Task creation failed, no data returned.")
+
+            let insertedSubtasks: Subtask[] = []
+
+            // If there are subtask titles, create and insert them
+            if (subTaskTitles && subTaskTitles.length > 0) {
+              const newSubtasksData = subTaskTitles.map(title => ({
+                task_id: newTask.id,
+                user_id: user.id,
+                title,
+                is_completed: false,
+                ai_generated: true, // Mark as AI-generated
+              }));
+
+              const { data: createdSubtasks, error: subtaskError } = await supabase
+                .from("sub_tasks")
+                .insert(newSubtasksData)
+                .select()
+
+              if (subtaskError) throw subtaskError
+              insertedSubtasks = createdSubtasks || []
+            }
+
+            // Combine the new task with its newly created subtasks
+            const completeNewTask = {
+              ...newTask,
+              subtasks: insertedSubtasks,
+              tags: [], // Initialize tags array
+            };
 
             set((state) => ({
               // Ensure tasks are sorted by order_index after adding
-              tasks: [...state.tasks, { ...data, tags: [] }].sort((a,b) => (a.order_index || 0) - (b.order_index || 0)),
+              tasks: [...state.tasks, completeNewTask].sort((a,b) => (a.order_index || 0) - (b.order_index || 0)),
             }))
 
-            toast.success("وظیفه با موفقیت اضافه شد")
+            toast.success("وظیفه با موفقیت اضافه شد" + (insertedSubtasks.length > 0 ? ` و ${insertedSubtasks.length} زیروظیفه ایجاد شد` : ""))
           } catch (error) {
             console.error("Error adding task:", error)
             toast.error("خطا در اضافه کردن وظیفه")
