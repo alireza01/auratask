@@ -112,7 +112,7 @@ const AlirezaBackgroundMaterial = shaderMaterial(
 extend({ AlirezaBackgroundMaterial })
 
 function DataStreamPlane() {
-  const materialRef = useRef<any>()
+  const materialRef = useRef<any>(null)
   const { size } = useThree()
   const [mouse, setMouse] = useState({ x: 0, y: 0 })
 
