@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useEffect, useState } from "react"
-import { Canvas, useFrame, useThree, ShaderMaterialProps } from "@react-three/fiber"
+import { Canvas, useFrame, useThree, ReactThreeFiber } from "@react-three/fiber"
 import { Plane, shaderMaterial } from "@react-three/drei"
 import * as THREE from "three"
 import { extend } from "@react-three/fiber"
@@ -9,7 +9,7 @@ import { extend } from "@react-three/fiber"
 declare global {
   namespace JSX {
     interface IntrinsicElements {
-      alirezaBackgroundMaterial: ShaderMaterialProps & {
+      alirezaBackgroundMaterial: ReactThreeFiber.Node<typeof AlirezaBackgroundMaterial, typeof AlirezaBackgroundMaterial.key> & {
         uTime?: number;
         uResolution?: THREE.Vector2;
         uMouse?: THREE.Vector2;
